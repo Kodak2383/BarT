@@ -125,6 +125,8 @@ final class MenuBarItemSource: NSObject {
 			let pid: pid_t
 			let bundleID: String
 			let title: String
+			let identifier: String?
+			let label: String?
 			let frame: CGRect
 			let isOnScreen: Bool
 		}
@@ -163,6 +165,7 @@ final class MenuBarItemSource: NSObject {
 				RawItem(
 					windowID: windowID, pid: pidValue, bundleID: bundleID,
 					title: description[kCGWindowName as String] as? String ?? "",
+					identifier: owner?.identifier, label: owner?.label,
 					frame: frame, isOnScreen: onScreen.contains(windowID)
 				)
 			)
@@ -186,7 +189,9 @@ final class MenuBarItemSource: NSObject {
 				bundleID: item.bundleID,
 				title: item.title,
 				siblingIndex: index,
-				siblingCount: groupCounts[key] ?? 1
+				siblingCount: groupCounts[key] ?? 1,
+				identifier: item.identifier,
+				label: item.label
 			)
 			return MenuBarItem(id: id, frame: item.frame, isOnScreen: item.isOnScreen)
 		}
@@ -200,6 +205,11 @@ final class MenuBarItemSource: NSObject {
 		let midX: CGFloat
 		let pid: pid_t
 		let bundleID: String
+		/// `kAXIdentifier`, e.g. `com.apple.menuextra.battery`. Apple's menu extras set it;
+		/// third-party items generally do not.
+		let identifier: String?
+		/// Readable name, see ``accessibilityLabel(of:)``.
+		let label: String?
 	}
 
 	/// Reads each running app's *own* menu bar items.
@@ -249,11 +259,44 @@ final class MenuBarItemSource: NSObject {
 				// frame and would otherwise match on center 0.
 				guard let frame = axFrame(of: child), frame.width > 0 else { continue }
 				owners.append(
-					ItemOwner(midX: frame.midX, pid: app.processIdentifier, bundleID: bundleID)
+					ItemOwner(
+						midX: frame.midX, pid: app.processIdentifier, bundleID: bundleID,
+						identifier: axString(of: child, kAXIdentifierAttribute),
+						label: accessibilityLabel(of: child)
+					)
 				)
 			}
 		}
 		return owners
+	}
+
+	/// The readable name an app gives its item, or `nil`.
+	///
+	/// Two sources, because apps use them differently: Apple's menu extras fill `AXDescription`
+	/// ("Battery", "Bluetooth"), while third-party apps tend to leave it empty and put something
+	/// in `AXHelp` instead ("CPU: Mini", "APPLE SSD AP1024R").
+	///
+	/// Everything from the first comma on is dropped: these strings routinely append live status
+	/// ("WiFi, connected, 3 bars"), which is both too long for the list and changes under you.
+	/// The part before the comma is the name.
+	private static func accessibilityLabel(of element: AXUIElement) -> String? {
+		for attribute in [kAXDescriptionAttribute, kAXHelpAttribute] {
+			guard let value = axString(of: element, attribute) else { continue }
+			let name = value.split(separator: ",", maxSplits: 1).first.map(String.init) ?? value
+			let trimmed = name.trimmingCharacters(in: .whitespaces)
+			if !trimmed.isEmpty { return trimmed }
+		}
+		return nil
+	}
+
+	private static func axString(of element: AXUIElement, _ attribute: String) -> String? {
+		var value: CFTypeRef?
+		guard
+			AXUIElementCopyAttributeValue(element, attribute as CFString, &value) == .success,
+			let string = value as? String,
+			!string.isEmpty
+		else { return nil }
+		return string
 	}
 
 	private static func axFrame(of element: AXUIElement) -> CGRect? {
@@ -298,7 +341,8 @@ final class MenuBarItemSource: NSObject {
 			let frame = String(
 				format: "x=%7.1f w=%5.1f", item.frame.minX, item.frame.width
 			)
-			print("[BarT]   \(flag)  \(frame)  win=\(item.windowID) pid=\(item.ownerPID)  \(item.storageKey)")
+			print("[BarT]   \(flag)  \(frame)  win=\(item.windowID)  \(item.storageKey)")
+			print("[BarT]            → \(item.displayName)")
 		}
 	}
 }

@@ -53,11 +53,18 @@ struct MenuBarLayout: Codable, Equatable, Sendable {
 		}
 	}
 
-	/// Files so far unknown keys under `visible`.
+	/// Files so far unknown keys under `visible`, and drops stale ones from it.
 	///
-	/// Keys that are *not* currently in `knownKeys` are deliberately kept: an app may have
-	/// quit and come back later, and its section assignment should survive that.
+	/// Keys missing from `knownKeys` are deliberately kept in `hidden` and `alwaysHidden`: an
+	/// app may have quit and come back later, and a deliberate assignment should survive that.
+	///
+	/// In `visible` they are dropped instead, because there they carry no information — a key
+	/// filed nowhere counts as visible anyway, so the entry says exactly what its absence
+	/// would. Without this the layout grows with every app ever seen and never shrinks (76
+	/// entries for 22 real items, measured).
 	mutating func reconcile(with knownKeys: [String]) {
+		let known = Set(knownKeys)
+		visible.removeAll { !known.contains($0) }
 		for key in knownKeys where section(of: key) == nil {
 			visible.append(key)
 		}
@@ -100,9 +107,17 @@ extension MenuBarLayout {
 		check(layout.hidden == ["b"], "re-filing leaves no duplicate behind")
 		check(layout.alwaysHidden == ["c", "a"], "re-filing appends correctly")
 
-		// An app that went away keeps its assignment.
+		// An app that went away keeps a deliberate assignment.
 		layout.reconcile(with: ["b"])
-		check(layout.alwaysHidden == ["c", "a"], "reconcile drops no vanished keys")
+		check(layout.alwaysHidden == ["c", "a"], "reconcile keeps vanished keys that were filed")
+
+		// ...but a vanished key in `visible` is dropped, since its absence means the same thing.
+		var pruning = MenuBarLayout(visible: ["gone", "here"], hidden: ["filed"])
+		pruning.reconcile(with: ["here"])
+		check(pruning.visible == ["here"], "reconcile drops vanished keys from visible")
+		check(pruning.hidden == ["filed"], "reconcile leaves hidden alone")
+		pruning.reconcile(with: ["here", "new"])
+		check(pruning.visible == ["here", "new"], "a returning key is filed under visible again")
 
 		do {
 			let data = try JSONEncoder().encode(layout)

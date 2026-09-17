@@ -40,8 +40,10 @@ In Xcode: `Product` → `Build`, or `Cmd+B`.
 - **⌥-click** additionally reveals “Always hidden”.
 - **⌃⌥⌘B** does the same as a left click, system-wide.
 - A click anywhere outside the menu bar collapses it again. Clicks *inside* the menu bar do not — otherwise the item you just clicked would be pulled out from under the cursor.
-- **Right click** opens the menu (settings, debug tools, quit).
-- Under **Items** in the settings, every menu bar item is assigned one of the three sections. The assignment is stored in `UserDefaults` and restored at launch.
+- **Right click** opens the menu (about, settings, quit). Holding **⌥** while the menu opens reveals the debug tools.
+- Under **Items** in the settings, every menu bar item is assigned one of the three sections, grouped by where it currently sits. The assignment is stored in `UserDefaults` and restored at launch.
+
+Items are named from the accessibility hierarchy where the owning app supplies something — “Bluetooth”, “Stats – CPU: Mini” — and Apple's menu extras additionally carry a stable identifier (`com.apple.menuextra.wifi`), which is what the assignment is stored under. Third-party items fall back to a positional key, so rearranging identically named items of the same app can still shift their assignment.
 
 To make that work, the bar is internally split into three areas, separated by two status items of BarT's own (invisible under normal circumstances):
 
@@ -67,7 +69,7 @@ Still open:
 - Items macOS pins itself (clock, Control Center) cannot be moved
 - “Launch at login” is wired up but untested. It could not have worked before the bundle ID was fixed, since `SMAppService` had nothing to tie the app to
 
-Behind the debug menu item “Layout self-test” sit the self-tests of `MenuBarLayout` and `OscillationGuard`, plus two checks that are only possible on a running system: the separator order (macOS has to place a new status item to the left of the existing ones — the entire section assignment rests on that) and the hotkey registration. Both also work without the menu:
+Behind the ⌥-only debug menu item “Run self-tests” sit the self-tests of `MenuBarLayout` and `OscillationGuard`, plus two checks that are only possible on a running system: the separator order (macOS has to place a new status item to the left of the existing ones — the entire section assignment rests on that) and the hotkey registration. All of them also run without the menu:
 
 ```bash
 BART_SELF_TEST=1 "$(ls -d ~/Library/Developer/Xcode/DerivedData/BarT-*/Build/Products/Debug/BarT.app)/Contents/MacOS/BarT"

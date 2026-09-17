@@ -30,20 +30,65 @@ struct MenuBarItemID: Hashable, Sendable {
 	/// unchanged key they have had since phase 1.
 	let siblingCount: Int
 
+	/// The item's own accessibility identifier, where it has one — `com.apple.menuextra.wifi`
+	/// and friends.
+	///
+	/// This is the one genuinely stable handle on an item: it is chosen by the owning app, not
+	/// derived from where the item happens to sit. Where it exists it replaces the positional
+	/// key entirely, which is what makes a stored assignment survive the user rearranging their
+	/// menu bar. Only Apple's own menu extras supply it — third-party items have none.
+	let identifier: String?
+
+	/// Human-readable name from the accessibility hierarchy, if the app offers one.
+	///
+	/// Deliberately excluded from ``==`` and ``hash(into:)`` below: some of these carry live
+	/// status ("WiFi, connected, 3 bars"), and an item whose identity changed every few seconds
+	/// would make ``MenuBarItemSource`` report a changed list on every poll.
+	let label: String?
+
 	/// Key that stays stable across app restarts; the only field that ends up in ``MenuBarLayout``.
 	///
-	/// It stays stable only as long as the order of identically named items does not change
-	/// (by rearranging Control Center itself, for instance) — a known residual fuzziness,
-	/// see ``siblingIndex``.
+	/// With an ``identifier`` this is exact. Without one it falls back to the positional key,
+	/// which stays stable only as long as the order of identically named items does not change
+	/// (by rearranging Control Center itself, for instance) — a known residual fuzziness.
 	var storageKey: String {
+		if let identifier, !identifier.isEmpty { return identifier }
 		let base = title.isEmpty ? bundleID : "\(bundleID):\(title)"
 		return siblingCount > 1 ? "\(base)#\(siblingIndex)" : base
 	}
 
 	var displayName: String {
 		let appName = NSRunningApplication(processIdentifier: ownerPID)?.localizedName ?? bundleID
-		let base = title.isEmpty ? appName : "\(appName) – \(title)"
+		if let label, !label.isEmpty {
+			// The app name is only worth prefixing when it adds something. It does for
+			// "Stats – CPU: Mini", but not for "Control Center – Control Center", and not for
+			// "Vorssaint – Vorssaint: idle", where the app already named itself.
+			guard !label.lowercased().hasPrefix(appName.lowercased()) else { return label }
+			return "\(appName) – \(label)"
+		}
+		// Window titles like "Item-0" are placeholders an app never meant as a name. They still
+		// serve as a key in ``storageKey``, but showing them helps nobody.
+		let named = title.hasPrefix("Item-") ? "" : title
+		let base = named.isEmpty ? appName : "\(appName) – \(named)"
 		return siblingCount > 1 ? "\(base) (\(siblingIndex + 1))" : base
+	}
+
+	// Identity covers everything except ``label`` — see there.
+	static func == (lhs: Self, rhs: Self) -> Bool {
+		lhs.windowID == rhs.windowID && lhs.ownerPID == rhs.ownerPID
+			&& lhs.bundleID == rhs.bundleID && lhs.title == rhs.title
+			&& lhs.siblingIndex == rhs.siblingIndex && lhs.siblingCount == rhs.siblingCount
+			&& lhs.identifier == rhs.identifier
+	}
+
+	func hash(into hasher: inout Hasher) {
+		hasher.combine(windowID)
+		hasher.combine(ownerPID)
+		hasher.combine(bundleID)
+		hasher.combine(title)
+		hasher.combine(siblingIndex)
+		hasher.combine(siblingCount)
+		hasher.combine(identifier)
 	}
 }
 

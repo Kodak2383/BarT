@@ -10,6 +10,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 	/// ``statusItemClicked()``.
 	private var statusMenu: NSMenu?
 
+	/// Shown only while ⌥ is held — see ``menuNeedsUpdate(_:)``.
+	private var debugMenuItems: [NSMenuItem] = []
+
 	let menuBarController = MenuBarController()
 
 	func applicationDidFinishLaunching(_ notification: Notification) {
@@ -23,6 +26,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 		}
 		if environment["BART_DEBUG_DUMP"] != nil {
 			MenuBarItemSource.debugDump()
+		}
+		if environment["BART_OPEN_SETTINGS"] != nil {
+			// The settings window is otherwise only reachable by right-clicking the status
+			// item, which makes it awkward to look at while working on it.
+			Task { try? await Task.sleep(for: .seconds(2)); self.openSettings() }
 		}
 
 		// Create the status item in the menu bar. Determine its window ID by diffing before
@@ -48,26 +56,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
 		// Build the menu.
 		let menu = NSMenu()
+		menu.delegate = self
 
-		// Settings item
+		menu.addItem(NSMenuItem(title: "About BarT", action: #selector(showAbout), keyEquivalent: ""))
 		menu.addItem(NSMenuItem(title: "Settings…", action: #selector(openSettings), keyEquivalent: ","))
 
-		// Separator
-		menu.addItem(NSMenuItem.separator())
-
-		// Debug tools. Purely read-only or purely computational.
-		menu.addItem(
-			NSMenuItem(
-				title: "Test: List all items (debug)",
-				action: #selector(debugListItems), keyEquivalent: ""
-			)
+		// Debug tools. Purely read-only or purely computational, and hidden unless ⌥ is held —
+		// see ``menuNeedsUpdate(_:)``. They are useful while working on the app and only
+		// clutter the menu for everyone else.
+		let debugSeparator = NSMenuItem.separator()
+		let listItems = NSMenuItem(
+			title: "List all items (debug)", action: #selector(debugListItems), keyEquivalent: ""
 		)
-		menu.addItem(
-			NSMenuItem(
-				title: "Test: Layout self-test (debug)",
-				action: #selector(debugRunLayoutSelfTest), keyEquivalent: ""
-			)
+		let selfTest = NSMenuItem(
+			title: "Run self-tests (debug)", action: #selector(debugRunLayoutSelfTest), keyEquivalent: ""
 		)
+		debugMenuItems = [debugSeparator, listItems, selfTest]
+		for item in debugMenuItems {
+			item.isHidden = true
+			menu.addItem(item)
+		}
 
 		menu.addItem(NSMenuItem.separator())
 
@@ -92,6 +100,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 			// enumerates for the first time and possibly creates the separators.
 			menuBarController.start()
 			if wantsSelfTest {
+				// Everything the debug menu item runs, so the environment flag is the whole
+				// suite and not just the live half of it.
+				MenuBarLayout.runSelfTest()
+				OscillationGuard.runSelfTest()
 				await menuBarController.runStartupSelfTest()
 			}
 		}
@@ -138,6 +150,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 		) ?? button.image
 	}
 
+	/// The standard panel already reads name, version and icon from the bundle — there is
+	/// nothing here worth writing by hand.
+	@objc
+	func showAbout() {
+		NSApplication.shared.activate(ignoringOtherApps: true)
+		NSApplication.shared.orderFrontStandardAboutPanel(nil)
+	}
+
 	@objc
 	func debugListItems() {
 		MenuBarItemSource.debugDump()
@@ -165,13 +185,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
 		let window = NSWindow(contentViewController: hostingController)
 		window.title = "BarT Settings"
-		window.setFrame(NSRect(x: 0, y: 0, width: 480, height: 360), display: false)
+		window.setFrame(NSRect(x: 0, y: 0, width: 520, height: 480), display: false)
 		window.center()
-		window.styleMask = [.titled, .closable, .miniaturizable]
+		// Resizable because the Items tab holds a list as long as the user's menu bar is — the
+		// minimum size comes from SettingsView.
+		window.styleMask = [.titled, .closable, .miniaturizable, .resizable]
 		window.isReleasedWhenClosed = false
 
 		self.settingsWindow = window
 		window.makeKeyAndOrderFront(nil)
 		NSApplication.shared.activate(ignoringOtherApps: true)
+	}
+}
+
+extension AppDelegate: NSMenuDelegate {
+	/// Runs just before the menu is drawn, which is the only moment at which the modifier state
+	/// is the one the user is actually holding.
+	func menuNeedsUpdate(_ menu: NSMenu) {
+		let showsDebug = NSEvent.modifierFlags.contains(.option)
+		for item in debugMenuItems {
+			item.isHidden = !showsDebug
+		}
 	}
 }
