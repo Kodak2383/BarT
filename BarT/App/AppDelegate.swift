@@ -97,10 +97,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 		}
 	}
 
-	/// Symbol of our own status item, depending on state. The arrow shows what the next click
-	/// will do: expand, or collapse again.
-	private static let collapsedSymbol = "menubar.arrow.down.rectangle"
-	private static let revealedSymbol = "menubar.arrow.up.rectangle"
+	/// Symbol of our own status item, depending on state. The chevrons point the way the items
+	/// will travel on the next click: while collapsed they sit off to the left and come back
+	/// rightwards into view, and while revealed the next click pushes them left again. Pointing
+	/// left and right rather than up and down, because that is the axis the bar actually moves on.
+	///
+	/// Double chevrons on purpose: the separator items carry a single `chevron.compact.left`,
+	/// and while revealed they are visible right next to this icon.
+	private static let collapsedSymbol = "chevron.right.2"
+	private static let revealedSymbol = "chevron.left.2"
 
 	/// A left click reveals or hides the hidden items, a right click opens the menu.
 	@objc
