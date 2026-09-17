@@ -20,7 +20,5 @@
 	<string>1</string>
 	<key>LSUIElement</key>
 	<true/>
-	<key>NSAccessibilityUsageDescription</key>
-	<string>BarT needs accessibility access to detect and control other apps' menu bar icons.</string>
 </dict>
 </plist>

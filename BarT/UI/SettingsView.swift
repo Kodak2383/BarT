@@ -1,33 +1,51 @@
-import CoreGraphics
+import AppKit
 import SwiftUI
 
 struct SettingsView: View {
 	let controller: MenuBarController
 
+	/// Read once here and re-read on every activation instead of in each tab: the user grants
+	/// the permission in System Settings, so the answer only ever changes while BarT is in the
+	/// background. `onAppear` alone would show a state that went stale the moment they left.
+	@State private var hasScreenRecording = ScreenRecordingPermission.isGranted
+
 	var body: some View {
 		TabView {
-			GeneralSettingsTab(controller: controller)
+			GeneralSettingsTab(controller: controller, hasScreenRecording: $hasScreenRecording)
 				.tabItem {
 					Label("General", systemImage: "gear")
 				}
-			ItemsSettingsTab(controller: controller)
+			ItemsSettingsTab(controller: controller, hasScreenRecording: $hasScreenRecording)
 				.tabItem {
 					Label("Items", systemImage: "menubar.rectangle")
 				}
 		}
 		.frame(minWidth: 460, minHeight: 400)
+		.onReceive(
+			NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)
+		) { _ in
+			let granted = ScreenRecordingPermission.isGranted
+			guard granted != hasScreenRecording else { return }
+			hasScreenRecording = granted
+			// The titles read while the permission was missing are wrong for good — only a
+			// fresh enumeration carries the real names.
+			controller.refresh()
+		}
 	}
 }
 
 private struct GeneralSettingsTab: View {
 	let controller: MenuBarController
 
+	@Binding var hasScreenRecording: Bool
+
 	private let loginItems = LoginItemManager()
 
 	@State private var launchAtLogin: Bool
 
-	init(controller: MenuBarController) {
+	init(controller: MenuBarController, hasScreenRecording: Binding<Bool>) {
 		self.controller = controller
+		_hasScreenRecording = hasScreenRecording
 		_launchAtLogin = State(initialValue: LoginItemManager().isRegistered())
 	}
 
@@ -72,6 +90,30 @@ private struct GeneralSettingsTab: View {
 					.font(.callout)
 				}
 			}
+
+			Section("Permission") {
+				LabeledContent("Screen recording") {
+					HStack(spacing: 8) {
+						if hasScreenRecording {
+							Label("Granted", systemImage: "checkmark.circle.fill")
+								.foregroundStyle(.green)
+						} else {
+							Label("Not granted", systemImage: "exclamationmark.circle.fill")
+								.foregroundStyle(.orange)
+						}
+						Button("Open System Settings…") {
+							ScreenRecordingPermission.openSystemSettings()
+						}
+					}
+					.font(.callout)
+				}
+				Text(
+					"BarT reads the names of your menu bar items, which macOS only hands out "
+						+ "with this permission. It never records your screen."
+				)
+				.font(.caption)
+				.foregroundStyle(.secondary)
+			}
 		}
 		.formStyle(.grouped)
 	}
@@ -79,6 +121,13 @@ private struct GeneralSettingsTab: View {
 
 private struct ItemsSettingsTab: View {
 	let controller: MenuBarController
+
+	@Binding var hasScreenRecording: Bool
+
+	/// The prompt belongs to the first look at the items, not to launch: at launch BarT has
+	/// nothing on screen to explain what it is asking for. Per launch once — macOS shows the
+	/// dialog only the first time anyway, and a silent no-op on every tab switch is noise.
+	@MainActor private static var didRequestThisLaunch = false
 
 	var body: some View {
 		VStack(spacing: 0) {
@@ -90,18 +139,27 @@ private struct ItemsSettingsTab: View {
 					.padding(10)
 					.background(.quaternary)
 			}
-			if !CGPreflightScreenCaptureAccess() {
+			if !hasScreenRecording {
 				// Measured 2026-09-17: without this permission macOS withholds `kCGWindowName`,
 				// so every item falls back to its hosting app and the list reads "Control
-				// Center" twenty-one times. Saying so beats showing it silently. BT-03 turns
-				// this into a request, BT-06 replaces the names with the real icons.
-				Label(
-					"Item names need the screen recording permission — without it macOS reports every item as its hosting app.",
-					systemImage: "info.circle"
-				)
+				// Center" twenty-one times. Saying so beats showing it silently — BT-06
+				// replaces the names with the real icons.
+				HStack(alignment: .firstTextBaseline, spacing: 10) {
+					Label(
+						"Item names need the screen recording permission — without it macOS reports every item as its hosting app.",
+						systemImage: "info.circle"
+					)
+					.frame(maxWidth: .infinity, alignment: .leading)
+					Button("Allow…") {
+						// Returns the standing answer without UI once macOS has asked; the
+						// system settings are the way back from a denial.
+						if !ScreenRecordingPermission.request() {
+							ScreenRecordingPermission.openSystemSettings()
+						}
+					}
+				}
 				.font(.callout)
 				.foregroundStyle(.secondary)
-				.frame(maxWidth: .infinity, alignment: .leading)
 				.padding(10)
 				.background(.quaternary)
 			}
@@ -138,6 +196,11 @@ private struct ItemsSettingsTab: View {
 					}
 				}
 			}
+		}
+		.task {
+			guard !hasScreenRecording, !Self.didRequestThisLaunch else { return }
+			Self.didRequestThisLaunch = true
+			hasScreenRecording = ScreenRecordingPermission.request()
 		}
 	}
 

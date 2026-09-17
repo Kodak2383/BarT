@@ -16,15 +16,14 @@ it four issues. BarT ships free; the price question waits for the assertion engi
 ### Ready — unblocked, startable now
 | ID | Title | Mode |
 | --- | --- | --- |
-| [BT-03](issues/BT-03.md) | Screen recording: ask at the right moment | 👤 HITL |
 | [BT-04](issues/BT-04.md) | Welcome window on first launch | 👤 HITL |
+| [BT-06](issues/BT-06.md) | Tracer bullet: real icons | 👤 HITL |
 | [BT-16](issues/BT-16.md) | Teach the ⌘-drag | 👤 HITL |
 | [BT-11](issues/BT-11.md) | Configurable shortcut | 👤 HITL |
 
 ### Blocked
 | ID | Title | Mode | Waiting for |
 | --- | --- | --- | --- |
-| [BT-06](issues/BT-06.md) | Tracer bullet: real icons | 👤 HITL | BT-03 |
 | [BT-07](issues/BT-07.md) | The section grid, read-only | 🤖 AFK | BT-06 |
 | [BT-02](issues/BT-02.md) | README for a public audience | 🤖 AFK | BT-07, BT-16 |
 | [BT-14](issues/BT-14.md) | Publish 1.0 | 👤 HITL | everything |
@@ -35,6 +34,7 @@ it four issues. BarT ships free; the price question waits for the assertion engi
 | [BT-12](issues/BT-12.md) | Auto-collapse after 15 seconds | Icon `»` → hotkey → `«` → 16 s → `»`, captured live |
 | [BT-01](issues/BT-01.md) | Ship the licences | grep proves no "MIT" claim is left; about-panel text still needs one human look |
 | [BT-15](issues/BT-15.md) | Remove the Ice-derived drag engine | ~1,000 lines gone, gates pass, reveal and auto-collapse unchanged on the live bar |
+| [BT-03](issues/BT-03.md) | Screen recording: ask at the right moment | Granted and revoked live: banner, General state and the item names follow on activation, no reopening |
 
 ### Dropped
 | ID | Title | Why |
@@ -49,7 +49,7 @@ it four issues. BarT ships free; the price question waits for the assertion engi
 
 ```mermaid
 graph LR
-  BT15[BT-15 Remove drag engine ✅] --> BT03[BT-03 Screen recording]
+  BT15[BT-15 Remove drag engine ✅] --> BT03[BT-03 Screen recording ✅]
   BT15 --> BT04[BT-04 Welcome]
   BT15 --> BT16[BT-16 Teach ⌘-drag]
   BT04 --> BT16
@@ -84,9 +84,11 @@ unknown (a new permission, an unproven API, unknown cost) first rather than last
 
 ## Parallelism
 
-BT-15 has landed, which unblocks four issues at once — and every one of them is 👤 HITL. That is
-not a coincidence: what is left of BarT is a permission, a welcome window, an explanation and a
-keyboard shortcut, and all four are things only a person can judge or grant.
+What is left of BarT is a welcome window, an explanation, a keyboard shortcut and the icons —
+which is why almost every open issue is 👤 HITL. Only a person can judge whether an explanation
+lands or a shortcut feels right.
 
-The one with leverage is [BT-03](issues/BT-03.md). Until the screen recording permission is
-granted, macOS withholds the window titles and the items view has nothing true to show.
+[BT-03](issues/BT-03.md) has landed, and its acceptance measured the ceiling for
+[BT-06](issues/BT-06.md): even *with* the permission, nine of twenty-one items carry no window
+title at all — every Apple extra hosted by Control Center. Names alone will never tell those nine
+apart, so the icons are not a nicety, they are the only thing that can.

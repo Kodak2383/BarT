@@ -185,10 +185,17 @@ final class MenuBarController {
 	/// separators, and whether the hotkey could be registered at all.
 	func runStartupSelfTest() async {
 		await engine.runSeparatorSelfTest()
+		MenuBarItemID.runDisplayNameSelfTest()
 		print(
 			"[BarT] Hotkey \(GlobalHotKey.displayName): "
 				+ (isHotKeyRegistered ? "registered" : "FAILED — already taken")
 		)
+	}
+
+	/// Re-reads the bar right now. Needed after the screen recording permission changes: the
+	/// names cached from an enumeration without it are all the hosting process.
+	func refresh() {
+		handleItemsChanged(source.snapshot())
 	}
 
 	private func handleItemsChanged(_ items: [MenuBarItem]) {
