@@ -140,13 +140,12 @@ private struct ItemsSettingsTab: View {
 					.background(.quaternary)
 			}
 			if !hasScreenRecording {
-				// Measured 2026-09-17: without this permission macOS withholds `kCGWindowName`,
-				// so every item falls back to its hosting app and the list reads "Control
-				// Center" twenty-one times. Saying so beats showing it silently — BT-06
-				// replaces the names with the real icons.
+				// Measured 2026-09-17: without this permission there is neither an icon to
+				// capture nor a `kCGWindowName` to read, so the grid falls back to names that
+				// say "Control Center" twelve times over. Saying so beats showing it silently.
 				HStack(alignment: .firstTextBaseline, spacing: 10) {
 					Label(
-						"Item names need the screen recording permission — without it macOS reports every item as its hosting app.",
+						"The icons need the screen recording permission — without it macOS hands out neither them nor the names, and every item reports its hosting app.",
 						systemImage: "info.circle"
 					)
 					.frame(maxWidth: .infinity, alignment: .leading)
@@ -170,30 +169,17 @@ private struct ItemsSettingsTab: View {
 					description: Text("BarT could not read the menu bar.")
 				)
 			} else {
-				// Read-only (PRD §3.3): the view shows where items sit, it does not move them.
-				// Arranging is the user's own ⌘-drag in the menu bar — BT-16 explains the
-				// gesture properly, this is the placeholder until then.
-				List {
-					ForEach(MenuBarSection.allCases, id: \.self) { section in
-						Section {
-							let sectionItems = items(in: section)
-							if sectionItems.isEmpty {
-								Text("Empty")
-									.font(.callout)
-									.foregroundStyle(.tertiary)
-							} else {
-								ForEach(sectionItems, id: \.windowID) { item in
-									row(for: item)
-								}
-							}
-						} header: {
-							Text(Self.title(of: section))
-						} footer: {
-							Text(Self.explanation(of: section))
-								.font(.caption)
-								.foregroundStyle(.secondary)
+				// Read-only (PRD §3.3): the grid shows where items sit, it does not move them.
+				// Arranging is the user's own ⌘-drag in the menu bar, which BT-16 explains —
+				// hence no picker, no menu and no drop target anywhere below.
+				ScrollView {
+					VStack(alignment: .leading, spacing: 18) {
+						ForEach(MenuBarSection.allCases, id: \.self) { section in
+							grid(for: section)
 						}
 					}
+					.padding(16)
+					.frame(maxWidth: .infinity, alignment: .leading)
 				}
 			}
 		}
@@ -218,35 +204,75 @@ private struct ItemsSettingsTab: View {
 		controller.items.filter { controller.section(of: $0) == section }
 	}
 
-	private func row(for item: MenuBarItem) -> some View {
-		HStack(spacing: 8) {
-			if hasScreenRecording {
-				// A fixed box whether or not the capture worked, so the names stay in one
-				// column. Wide enough for the items that are text rather than a glyph — a
-				// clock's window is about twice as wide as it is tall.
-				Group {
-					if let icon = controller.icons.icon(for: item.windowID) {
-						Image(nsImage: icon)
-							.resizable()
-							.aspectRatio(contentMode: .fit)
-					} else {
-						Image(systemName: "square.dashed")
-							.foregroundStyle(.tertiary)
+	/// One section: its name, its items as a grid that wraps, and the sentence that says how the
+	/// section is reached.
+	private func grid(for section: MenuBarSection) -> some View {
+		VStack(alignment: .leading, spacing: 8) {
+			Text(Self.title(of: section))
+				.font(.headline)
+			let sectionItems = items(in: section)
+			if sectionItems.isEmpty {
+				// An empty section keeps its area: three areas that stay put are what makes the
+				// window a picture of the bar rather than a list that reshuffles.
+				Text("Empty")
+					.font(.callout)
+					.foregroundStyle(.tertiary)
+					.frame(maxWidth: .infinity, minHeight: Self.cellHeight, alignment: .leading)
+			} else {
+				// `.adaptive` is the wrap: as many cells per row as fit, the rest on the next
+				// one, and never a horizontal scroller (R4-Q1).
+				LazyVGrid(
+					columns: [GridItem(.adaptive(minimum: Self.cellWidth), spacing: 6)],
+					alignment: .leading, spacing: 6
+				) {
+					ForEach(sectionItems, id: \.windowID) { item in
+						cell(for: item)
 					}
 				}
-				.frame(width: 44, height: 18)
-				.padding(.horizontal, 3)
-				.padding(.vertical, 2)
-				.background(
-					RoundedRectangle(cornerRadius: 5)
-						.fill(Color(nsColor: controller.icons.menuBarTint ?? .windowBackgroundColor))
-				)
 			}
-			Text(item.displayName)
-				.lineLimit(1)
-				.truncationMode(.middle)
+			Text(Self.explanation(of: section))
+				.font(.caption)
+				.foregroundStyle(.secondary)
 		}
-		.padding(.vertical, 2)
+	}
+
+	/// Wide enough for the items that are text rather than a glyph — a clock or a network meter
+	/// is about twice as wide as it is tall.
+	private static let cellWidth: CGFloat = 54
+	private static let cellHeight: CGFloat = 24
+
+	private func cell(for item: MenuBarItem) -> some View {
+		let icon = controller.icons.icon(for: item.windowID)
+		return Group {
+			if let icon {
+				Image(nsImage: icon)
+					.resizable()
+					.aspectRatio(contentMode: .fit)
+			} else {
+				// No capture: the name is all there is. On the plain background rather than on
+				// the chip, because the chip is the menu bar's colour and text on it would be
+				// the same white-on-white the icons would have been.
+				Text(item.displayName)
+					.font(.caption2)
+					.lineLimit(1)
+					.truncationMode(.middle)
+					.foregroundStyle(.secondary)
+			}
+		}
+		.padding(.horizontal, 4)
+		.frame(width: Self.cellWidth, height: Self.cellHeight)
+		.background {
+			if icon != nil {
+				RoundedRectangle(cornerRadius: 5)
+					.fill(Color(nsColor: controller.icons.menuBarTint ?? .windowBackgroundColor))
+			}
+		}
+		// The icon is a picture of a name nobody wrote down — without this the grid is silent to
+		// VoiceOver, and the tooltip answers the same question with the mouse.
+		.help(item.displayName)
+		.accessibilityElement(children: .ignore)
+		.accessibilityAddTraits(.isImage)
+		.accessibilityLabel(item.displayName)
 	}
 
 	private static func title(of section: MenuBarSection) -> String {

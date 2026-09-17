@@ -19,12 +19,11 @@ it four issues. BarT ships free; the price question waits for the assertion engi
 | [BT-04](issues/BT-04.md) | Welcome window on first launch | 👤 HITL |
 | [BT-16](issues/BT-16.md) | Teach the ⌘-drag | 👤 HITL |
 | [BT-11](issues/BT-11.md) | Configurable shortcut | 👤 HITL |
-| [BT-07](issues/BT-07.md) | The section grid, read-only | 🤖 AFK |
 
 ### Blocked
 | ID | Title | Mode | Waiting for |
 | --- | --- | --- | --- |
-| [BT-02](issues/BT-02.md) | README for a public audience | 🤖 AFK | BT-07, BT-16 |
+| [BT-02](issues/BT-02.md) | README for a public audience | 🤖 AFK | BT-16 |
 | [BT-14](issues/BT-14.md) | Publish 1.0 | 👤 HITL | everything |
 
 ### Done
@@ -35,6 +34,7 @@ it four issues. BarT ships free; the price question waits for the assertion engi
 | [BT-15](issues/BT-15.md) | Remove the Ice-derived drag engine | ~1,000 lines gone, gates pass, reveal and auto-collapse unchanged on the live bar |
 | [BT-03](issues/BT-03.md) | Screen recording: ask at the right moment | Granted and revoked live: banner, General state and the item names follow on activation, no reopening |
 | [BT-06](issues/BT-06.md) | Tracer bullet: real icons | Confirmed live: every item in the list carries its own icon, 1.25 s per pass, 0 % CPU while the window sits open |
+| [BT-07](issues/BT-07.md) | The section grid, read-only | Three grids on the live bar at the window minimum; twenty-one AXImage elements read back with their names |
 
 ### Dropped
 | ID | Title | Why |
@@ -55,7 +55,7 @@ graph LR
   BT04 --> BT16
   BT03 --> BT06[BT-06 Icons tracer ✅]
   BT15 --> BT06
-  BT06 --> BT07[BT-07 Grid, read-only]
+  BT06 --> BT07[BT-07 Grid, read-only ✅]
   BT07 --> BT02[BT-02 README]
   BT16 --> BT02
   BT11[BT-11 Shortcut]
@@ -84,13 +84,13 @@ unknown (a new permission, an unproven API, unknown cost) first rather than last
 
 ## Parallelism
 
-What is left of BarT is a welcome window, an explanation and a keyboard shortcut — which is why
-almost every open issue is 👤 HITL. Only a person can judge whether an explanation lands or a
-shortcut feels right. [BT-07](issues/BT-07.md) is the exception and can run alongside any of them:
-the capture path it builds on is proven and measured.
+What is left of BarT is a welcome window, an explanation and a keyboard shortcut — [BT-04](issues/BT-04.md),
+[BT-16](issues/BT-16.md), [BT-11](issues/BT-11.md), every one of them 👤 HITL. Nothing blocks
+anything else among them; only a person can judge whether an explanation lands or a shortcut feels
+right, so they go in whatever order suits the time available. After them the README
+([BT-02](issues/BT-02.md)) has everything it needs to describe.
 
-[BT-06](issues/BT-06.md) settled the ceiling that [BT-03](issues/BT-03.md) measured: nine of
-twenty-one items carry no window title at all, and the icon is what tells those nine apart. It also
-settled how they have to be drawn — the menu bar is translucent, so under a dark desktop picture
-macOS renders every glyph white, and an icon shown on a plain window background is invisible. The
-grid in BT-07 inherits that chip, not just the images.
+The items view is finished: [BT-06](issues/BT-06.md) proved the capture path and measured it,
+[BT-07](issues/BT-07.md) turned it into the three grids the PRD asks for. What BT-03 measured as a
+ceiling — nine of twenty-one items with no window title at all — is no longer a problem anyone
+sees, because nobody reads the names any more.
