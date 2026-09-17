@@ -1,9 +1,9 @@
 name: BarT
 options:
-  # Gehört zwingend unter `options` — auf oberster Ebene ignoriert xcodegen den Schlüssel
-  # stillschweigend, PRODUCT_BUNDLE_IDENTIFIER bleibt leer, und die App läuft ganz ohne
-  # Bundle-ID: UserDefaults fällt dann auf den Prozessnamen zurück und SMAppService
-  # („Bei Anmeldung starten“) hat nichts, woran es die App festmachen könnte.
+  # This key MUST live under `options` — at the top level xcodegen ignores it silently,
+  # PRODUCT_BUNDLE_IDENTIFIER stays empty, and the app runs with no bundle ID at all:
+  # UserDefaults then falls back to the process name, and SMAppService ("Launch at login")
+  # has nothing to tie the app to.
   bundleIdPrefix: de.andreduhme
 
 settings:
@@ -24,7 +24,7 @@ targets:
         LSUIElement: true
         CFBundleShortVersionString: "0.1.0"
         CFBundleVersion: "1"
-        NSAccessibilityUsageDescription: "BarT benötigt Bedienungshilfen-Zugriff, um Menüleisten-Icons anderer Apps zu erkennen und zu steuern."
+        NSAccessibilityUsageDescription: "BarT needs accessibility access to detect and control other apps' menu bar icons."
     entitlements:
       path: BarT/BarT.entitlements
       properties:

@@ -3,10 +3,10 @@
 <plist version="1.0">
 <dict>
 	<!--
-	WICHTIG: App Sandbox ist DEAKTIVIERT.
-	Grund: BarT steuert fremde Anwendungsprozesse über die macOS Accessibility API.
-	Die App Sandbox erlaubt solche Kontrolle nicht (aus Sicherheitsgründen).
-	Daher muss die Sandbox hier explizit deaktiviert werden.
+	IMPORTANT: the App Sandbox is DISABLED.
+	Reason: BarT drives other applications' processes through the macOS Accessibility API.
+	The App Sandbox does not permit that kind of control (for security reasons).
+	The sandbox therefore has to be disabled explicitly here.
 	-->
 	<key>com.apple.security.app-sandbox</key>
 	<false/>

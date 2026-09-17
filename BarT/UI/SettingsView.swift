@@ -7,7 +7,7 @@ struct SettingsView: View {
 		TabView {
 			GeneralSettingsTab(controller: controller)
 				.tabItem {
-					Label("Allgemein", systemImage: "gear")
+					Label("General", systemImage: "gear")
 				}
 			ItemsSettingsTab(controller: controller)
 				.tabItem {
@@ -34,7 +34,7 @@ private struct GeneralSettingsTab: View {
 
 	var body: some View {
 		Form {
-			Toggle("Bei Anmeldung starten", isOn: $launchAtLogin)
+			Toggle("Launch at login", isOn: $launchAtLogin)
 				.onChange(of: launchAtLogin) { _, newValue in
 					do {
 						if newValue {
@@ -43,40 +43,40 @@ private struct GeneralSettingsTab: View {
 							try loginItems.unregister()
 						}
 					} catch {
-						// Registrierung fehlgeschlagen — Toggle zeigt den tatsächlichen Status.
+						// Registration failed — the toggle shows the actual state.
 						launchAtLogin = loginItems.isRegistered()
 					}
 				}
 
-			LabeledContent("Ein-/Ausblenden") {
+			LabeledContent("Show/Hide") {
 				VStack(alignment: .leading, spacing: 2) {
 					if controller.isHotKeyRegistered {
 						Text(GlobalHotKey.displayName)
 					} else {
-						Text("\(GlobalHotKey.displayName) — bereits belegt")
+						Text("\(GlobalHotKey.displayName) — already taken")
 							.foregroundStyle(.red)
 					}
-					// Sonst findet die Geste niemand.
-					Text("⌥-Klick aufs Symbol zeigt auch „Immer versteckt“")
+					// Nobody would ever find this gesture otherwise.
+					Text("⌥-click the icon to reveal “Always hidden” as well")
 						.font(.caption)
 						.foregroundStyle(.secondary)
 				}
 			}
 
-			LabeledContent("Bedienungshilfen") {
+			LabeledContent("Accessibility") {
 				if isAccessibilityTrusted {
-					Label("Erteilt", systemImage: "checkmark.circle.fill")
+					Label("Granted", systemImage: "checkmark.circle.fill")
 						.foregroundStyle(.green)
 				} else {
-					Button("Berechtigung erteilen…") {
+					Button("Grant permission…") {
 						AccessibilityPermission.requestAccess()
 					}
 				}
 			}
 		}
 		.padding()
-		// ponytail: Status wird nur beim Öffnen geprüft, nicht live während das Fenster
-		// offen bleibt. Erneutes Öffnen der Einstellungen reicht zum Auffrischen.
+		// ponytail: the status is only checked when the window opens, not live while it
+		// stays open. Reopening Settings is enough to refresh it.
 		.onAppear { isAccessibilityTrusted = AccessibilityPermission.isTrusted }
 	}
 }
@@ -92,7 +92,7 @@ private struct ItemsSettingsTab: View {
 					.font(.caption)
 			}
 			if controller.items.isEmpty {
-				Text("Keine Menüleisten-Items gefunden.")
+				Text("No menu bar items found.")
 					.foregroundStyle(.secondary)
 					.frame(maxWidth: .infinity, maxHeight: .infinity)
 			} else {
@@ -101,9 +101,9 @@ private struct ItemsSettingsTab: View {
 						Text(item.displayName)
 						Spacer()
 						Picker("", selection: sectionBinding(for: item)) {
-							Text("Sichtbar").tag(MenuBarLayout.Section.visible)
-							Text("Versteckt").tag(MenuBarLayout.Section.hidden)
-							Text("Immer versteckt").tag(MenuBarLayout.Section.alwaysHidden)
+							Text("Visible").tag(MenuBarLayout.Section.visible)
+							Text("Hidden").tag(MenuBarLayout.Section.hidden)
+							Text("Always hidden").tag(MenuBarLayout.Section.alwaysHidden)
 						}
 						.labelsHidden()
 						.frame(width: 160)

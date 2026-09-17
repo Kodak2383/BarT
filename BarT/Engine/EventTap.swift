@@ -1,14 +1,14 @@
 import CoreGraphics
 import OSLog
 
-/// Minimaler CGEvent-Tap — nur so weit ausgebaut, wie ``DragHideEngine`` ihn für die
-/// Zustellung ihrer Drag-Events braucht (siehe dort ``DragHideEngine/scromble(_:pid:)``).
+/// Minimal CGEvent tap — built out only as far as ``DragHideEngine`` needs it to deliver its
+/// drag events (see ``DragHideEngine/scromble(_:pid:)`` there).
 ///
-/// Tap-Konstruktion übernommen aus Ice (MIT), Ice/Events/EventTap.swift.
+/// Tap construction taken from Ice (MIT), Ice/Events/EventTap.swift.
 ///
-/// Es gibt bewusst keinen `deinit`: der wäre in Swift 6 nicht MainActor-isoliert und
-/// käme an die gespeicherten Eigenschaften nicht heran. Jeder Tap muss deshalb
-/// explizit über ``invalidate()`` abgebaut werden.
+/// There is deliberately no `deinit`: under Swift 6 it would not be MainActor-isolated and
+/// could not reach the stored properties. Every tap therefore has to be torn down explicitly
+/// via ``invalidate()``.
 @MainActor
 final class EventTap {
 	enum Location {
@@ -16,7 +16,7 @@ final class EventTap {
 		case pid(pid_t)
 	}
 
-	/// Rückgabe `nil` verwirft das Event — wirkt nur bei `options == .defaultTap`.
+	/// Returning `nil` discards the event — which only takes effect for `options == .defaultTap`.
 	typealias Handler = @MainActor (EventTap, CGEventType, CGEvent) -> CGEvent?
 
 	private let handler: Handler
@@ -72,7 +72,7 @@ final class EventTap {
 	}
 
 	fileprivate func handle(type: CGEventType, event: CGEvent) -> CGEvent? {
-		// Deaktiviert das System den Tap (Timeout/Nutzereingabe), ist er sonst still tot.
+		// When the system disables the tap (timeout or user input), it would silently stay dead.
 		if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
 			enable()
 			return event
@@ -81,8 +81,8 @@ final class EventTap {
 	}
 }
 
-/// C-Callback des Taps. Die Run-Loop-Source hängt am Main-Run-Loop, der Callback läuft
-/// also auf dem Main-Thread — `assumeIsolated` ist hier korrekt und nicht geraten.
+/// The tap's C callback. The run loop source is attached to the main run loop, so the callback
+/// runs on the main thread — `assumeIsolated` is correct here, not a guess.
 private func eventTapCallback(
 	proxy: CGEventTapProxy,
 	type: CGEventType,
@@ -90,10 +90,10 @@ private func eventTapCallback(
 	userInfo: UnsafeMutableRawPointer?
 ) -> Unmanaged<CGEvent>? {
 	guard let userInfo else { return Unmanaged.passUnretained(event) }
-	// Zeiger als Ganzzahl durch den `assumeIsolated`-Block reichen: weder `CGEvent` noch
-	// die Zeigertypen selbst sind `Sendable`, die Isolationsprüfung lässt sie sonst nicht
-	// passieren. Die Objekte leben währenddessen garantiert weiter — CoreGraphics hält das
-	// Event über den Callback hinweg, den Tap hält ``DragHideEngine``.
+	// Pass the pointers through the `assumeIsolated` block as integers: neither `CGEvent` nor
+	// the pointer types themselves are `Sendable`, so the isolation check would not let them
+	// through otherwise. The objects are guaranteed to stay alive meanwhile — CoreGraphics
+	// holds the event across the callback, and ``DragHideEngine`` holds the tap.
 	let tapBits = UInt(bitPattern: userInfo)
 	let eventBits = UInt(bitPattern: Unmanaged.passUnretained(event).toOpaque())
 	var resultBits: UInt = 0

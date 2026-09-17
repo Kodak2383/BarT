@@ -21,6 +21,6 @@
 	<key>LSUIElement</key>
 	<true/>
 	<key>NSAccessibilityUsageDescription</key>
-	<string>BarT benötigt Bedienungshilfen-Zugriff, um Menüleisten-Icons anderer Apps zu erkennen und zu steuern.</string>
+	<string>BarT needs accessibility access to detect and control other apps' menu bar icons.</string>
 </dict>
 </plist>

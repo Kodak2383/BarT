@@ -1,10 +1,9 @@
 import Foundation
 
-/// Persistierbare Zuordnung von Menüleisten-Items zu den drei Sektionen.
+/// Persistable assignment of menu bar items to the three sections.
 ///
-/// Gespeichert werden ``MenuBarItemID/storageKey``-Strings, keine Fenster-IDs — die sind
-/// nur sitzungsgültig. Die Reihenfolge innerhalb einer Sektion ist die spätere
-/// Anzeigereihenfolge.
+/// What gets stored are ``MenuBarItemID/storageKey`` strings, not window IDs — those are valid
+/// for one session only. The order within a section is the later display order.
 struct MenuBarLayout: Codable, Equatable, Sendable {
 	enum Section: String, Codable, CaseIterable, Sendable {
 		case visible
@@ -34,11 +33,10 @@ struct MenuBarLayout: Codable, Equatable, Sendable {
 		Section.allCases.first { keys(in: $0).contains(key) }
 	}
 
-	/// Verschiebt einen Schlüssel in eine Sektion. Bereits vorhandene Vorkommen in *allen*
-	/// Sektionen werden vorher entfernt, ein Schlüssel ist also nie doppelt einsortiert.
+	/// Moves a key into a section. Existing occurrences in *all* sections are removed first,
+	/// so a key is never filed twice.
 	///
-	/// - Parameter index: Zielposition innerhalb der Sektion; `nil` oder außerhalb des
-	///   Bereichs hängt ans Ende an.
+	/// - Parameter index: target position within the section; `nil` or out of range appends.
 	mutating func move(_ key: String, to section: Section, at index: Int? = nil) {
 		visible.removeAll { $0 == key }
 		hidden.removeAll { $0 == key }
@@ -55,11 +53,10 @@ struct MenuBarLayout: Codable, Equatable, Sendable {
 		}
 	}
 
-	/// Sortiert bisher unbekannte Schlüssel nach `visible` ein.
+	/// Files so far unknown keys under `visible`.
 	///
-	/// Schlüssel, die gerade *nicht* in `knownKeys` stehen, bleiben bewusst erhalten: eine
-	/// App kann beendet sein und später zurückkommen, ihre Sektionszuordnung soll das
-	/// überleben.
+	/// Keys that are *not* currently in `knownKeys` are deliberately kept: an app may have
+	/// quit and come back later, and its section assignment should survive that.
 	mutating func reconcile(with knownKeys: [String]) {
 		for key in knownKeys where section(of: key) == nil {
 			visible.append(key)
@@ -67,11 +64,11 @@ struct MenuBarLayout: Codable, Equatable, Sendable {
 	}
 }
 
-// MARK: - Selbsttest
+// MARK: - Self-test
 
 extension MenuBarLayout {
-	/// Minimaler Selbsttest ohne Test-Framework; aufrufbar über den Debug-Menüpunkt.
-	/// Gibt `true` zurück, wenn alle Prüfungen bestanden wurden.
+	/// Minimal self-test without a test framework; callable from the debug menu item.
+	/// Returns `true` when every check passed.
 	@discardableResult
 	static func runSelfTest() -> Bool {
 		var failures: [String] = []
@@ -80,49 +77,49 @@ extension MenuBarLayout {
 		}
 
 		var layout = MenuBarLayout()
-		check(layout.section(of: "a") == nil, "Leeres Layout darf keinen Treffer liefern")
+		check(layout.section(of: "a") == nil, "an empty layout must not report a match")
 
 		layout.reconcile(with: ["a", "b", "c"])
-		check(layout.visible == ["a", "b", "c"], "reconcile sortiert Unbekanntes nach visible")
-		check(layout.section(of: "b") == .visible, "section(of:) findet b in visible")
+		check(layout.visible == ["a", "b", "c"], "reconcile files unknown keys under visible")
+		check(layout.section(of: "b") == .visible, "section(of:) finds b in visible")
 
 		layout.reconcile(with: ["a", "b", "c"])
-		check(layout.visible == ["a", "b", "c"], "reconcile ist idempotent")
+		check(layout.visible == ["a", "b", "c"], "reconcile is idempotent")
 
 		layout.move("b", to: .hidden)
-		check(layout.visible == ["a", "c"], "move entfernt aus der Quellsektion")
-		check(layout.hidden == ["b"], "move fügt in die Zielsektion ein")
+		check(layout.visible == ["a", "c"], "move removes from the source section")
+		check(layout.hidden == ["b"], "move inserts into the target section")
 
 		layout.move("a", to: .hidden, at: 0)
-		check(layout.hidden == ["a", "b"], "move respektiert den Index")
+		check(layout.hidden == ["a", "b"], "move respects the index")
 
 		layout.move("c", to: .alwaysHidden, at: 99)
-		check(layout.alwaysHidden == ["c"], "Index außerhalb des Bereichs hängt ans Ende an")
+		check(layout.alwaysHidden == ["c"], "an out-of-range index appends")
 
 		layout.move("a", to: .alwaysHidden)
-		check(layout.hidden == ["b"], "Umsortieren hinterlässt kein Duplikat")
-		check(layout.alwaysHidden == ["c", "a"], "Umsortieren hängt korrekt an")
+		check(layout.hidden == ["b"], "re-filing leaves no duplicate behind")
+		check(layout.alwaysHidden == ["c", "a"], "re-filing appends correctly")
 
-		// Entfernte App behält ihre Zuordnung.
+		// An app that went away keeps its assignment.
 		layout.reconcile(with: ["b"])
-		check(layout.alwaysHidden == ["c", "a"], "reconcile entfernt keine verschwundenen Schlüssel")
+		check(layout.alwaysHidden == ["c", "a"], "reconcile drops no vanished keys")
 
 		do {
 			let data = try JSONEncoder().encode(layout)
 			let decoded = try JSONDecoder().decode(MenuBarLayout.self, from: data)
-			check(decoded == layout, "Codable-Roundtrip erhält das Layout")
+			check(decoded == layout, "the Codable round trip preserves the layout")
 		} catch {
-			failures.append("Codable-Roundtrip warf \(error)")
+			failures.append("the Codable round trip threw \(error)")
 		}
 
 		if failures.isEmpty {
-			print("[BarT] MenuBarLayout-Selbsttest: alle Prüfungen bestanden")
+			print("[BarT] MenuBarLayout self-test: all checks passed")
 		} else {
 			for failure in failures {
-				print("[BarT] MenuBarLayout-Selbsttest FEHLER: \(failure)")
+				print("[BarT] MenuBarLayout self-test FAILED: \(failure)")
 			}
 		}
-		assert(failures.isEmpty, "MenuBarLayout-Selbsttest fehlgeschlagen")
+		assert(failures.isEmpty, "MenuBarLayout self-test failed")
 		return failures.isEmpty
 	}
 }

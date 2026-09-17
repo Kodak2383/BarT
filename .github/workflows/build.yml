@@ -9,8 +9,8 @@ on:
 jobs:
   build:
     runs-on: macos-15
-    # Hinweis: macos-26 ist evtl. noch nicht auf GitHub Actions verfügbar
-    # Falls dieser Job fehlschlägt, auf macos-15 oder macos-latest zurückgreifen
+    # Note: the deployment target is macOS 26, so this runner's SDK may be too old.
+    # If the build fails on the SDK, switch to a macos-26 runner once one is available.
 
     steps:
     - uses: actions/checkout@v4

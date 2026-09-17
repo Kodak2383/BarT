@@ -5,8 +5,8 @@ struct BarTApp: App {
 	@NSApplicationDelegateAdaptor(AppDelegate.self) var delegate
 
 	var body: some Scene {
-		// Reine Menüleisten-App — keine Window/WindowGroup
-		// AppDelegate verwaltet das Status-Item
+		// Pure menu bar app — no Window/WindowGroup.
+		// AppDelegate owns the status item.
 		Settings {
 			EmptyView()
 		}

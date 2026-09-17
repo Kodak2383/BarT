@@ -1,19 +1,18 @@
 import ServiceManagement
 
-/// Verwaltet die Auto-Launch-Einstellung via Login Items
-/// (noch nicht in der UI verdrahtet — nur bereitgestellt für Phase 1+)
+/// Manages the auto-launch setting via Login Items.
 class LoginItemManager {
-	/// Registriert die App als Login Item
+	/// Registers the app as a login item.
 	func register() throws {
 		try SMAppService.mainApp.register()
 	}
 
-	/// Deregistriert die App aus Login Items
+	/// Removes the app from the login items.
 	func unregister() throws {
 		try SMAppService.mainApp.unregister()
 	}
 
-	/// Prüft, ob die App aktuell als Login Item registriert ist
+	/// Whether the app is currently registered as a login item.
 	func isRegistered() -> Bool {
 		SMAppService.mainApp.status == .enabled
 	}

@@ -6,73 +6,73 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 	var statusItem: NSStatusItem?
 	var settingsWindow: NSWindow?
 
-	/// Wird nur für die Dauer eines Rechtsklicks ans Status-Item gehängt — siehe
+	/// Attached to the status item for the duration of a right-click only — see
 	/// ``statusItemClicked()``.
 	private var statusMenu: NSMenu?
 
 	let menuBarController = MenuBarController()
 
 	func applicationDidFinishLaunching(_ notification: Notification) {
-		// Terminal-Zugriff auf die Debug-Ausgaben ohne Menü-Klick, nur wenn explizit gesetzt.
+		// Terminal access to the debug output without a menu click, only when explicitly set.
 		let environment = ProcessInfo.processInfo.environment
 		let wantsSelfTest = environment["BART_SELF_TEST"] != nil
 		if environment["BART_DEBUG_DUMP"] != nil || wantsSelfTest {
-			// Ungepuffert, sonst geht die Ausgabe verloren, wenn der Prozess (z.B. beim
-			// Debuggen über eine umgeleitete Log-Datei) hart beendet wird.
+			// Unbuffered, otherwise the output is lost when the process is killed hard (while
+			// debugging through a redirected log file, for instance).
 			setvbuf(stdout, nil, _IONBF, 0)
 		}
 		if environment["BART_DEBUG_DUMP"] != nil {
 			MenuBarItemSource.debugDump()
 		}
 
-		// Status-Item in der Menüleiste erstellen. WindowID vorher/nachher per Diff ermitteln
-		// (gleiche Technik wie DragHideEngine für den Trenner) und beim Controller als
-		// eigenes Fenster registrieren — es darf nie als verwaltbares Item auftauchen.
-		// Bewusst VOR menuBarController.start(): der legt bei Bedarf selbst sofort einen
-		// Trenner an (neue WindowID) — parallel dazu wäre die Diff-Erkennung hier
-		// mehrdeutig und könnte die falsche neue WindowID greifen.
+		// Create the status item in the menu bar. Determine its window ID by diffing before
+		// and after (the same technique DragHideEngine uses for the separators) and register
+		// it with the controller as our own window — it must never show up as a manageable
+		// item. Deliberately BEFORE menuBarController.start(): that call may immediately
+		// create a separator of its own (a new window ID), and in parallel the diff here
+		// would be ambiguous and could grab the wrong new window ID.
 		let windowIDsBeforeStatusItem = Set(CGSBridge.menuBarWindowIDs(onScreenOnly: false))
 		statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
 
 		if let button = statusItem?.button {
 			button.image = NSImage(systemSymbolName: Self.collapsedSymbol, accessibilityDescription: "BarT")
-			// Titel nur als Rückfall, falls das Symbol fehlt — sonst stünde das Kürzel aus
-			// Phase 0 dauerhaft neben dem Icon.
+			// The title is a fallback for a missing symbol only — otherwise the phase 0
+			// abbreviation would sit next to the icon permanently.
 			button.title = button.image == nil ? "BT" : ""
-			// Bewusst über `action` statt `statusItem.menu`: ein gesetztes Menü fängt schon den
-			// Linksklick ab, und der gehört der Reveal-Geste.
+			// Deliberately via `action` rather than `statusItem.menu`: an assigned menu already
+			// swallows the left click, and that one belongs to the reveal gesture.
 			button.target = self
 			button.action = #selector(statusItemClicked)
 			button.sendAction(on: [.leftMouseUp, .rightMouseUp])
 		}
 
-		// Menü mit Items erstellen
+		// Build the menu.
 		let menu = NSMenu()
 
-		// Settings Item
-		menu.addItem(NSMenuItem(title: "Einstellungen…", action: #selector(openSettings), keyEquivalent: ","))
+		// Settings item
+		menu.addItem(NSMenuItem(title: "Settings…", action: #selector(openSettings), keyEquivalent: ","))
 
 		// Separator
 		menu.addItem(NSMenuItem.separator())
 
-		// Debug-Werkzeuge. Rein lesend bzw. rein rechnend.
+		// Debug tools. Purely read-only or purely computational.
 		menu.addItem(
 			NSMenuItem(
-				title: "Test: Alle Items auflisten (Debug)",
+				title: "Test: List all items (debug)",
 				action: #selector(debugListItems), keyEquivalent: ""
 			)
 		)
 		menu.addItem(
 			NSMenuItem(
-				title: "Test: Layout-Selbsttest (Debug)",
+				title: "Test: Layout self-test (debug)",
 				action: #selector(debugRunLayoutSelfTest), keyEquivalent: ""
 			)
 		)
 
 		menu.addItem(NSMenuItem.separator())
 
-		// Quit Item
-		menu.addItem(NSMenuItem(title: "Beenden", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
+		// Quit item
+		menu.addItem(NSMenuItem(title: "Quit", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
 
 		statusMenu = menu
 
@@ -81,15 +81,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 		}
 
 		Task { [menuBarController] in
-			// Neues Status-Item fährt animiert ein (siehe DragHideEngine); vorher gibt es
-			// noch keine stabile WindowID zu finden.
+			// A new status item slides in with an animation (see DragHideEngine); before that
+			// there is no stable window ID to find.
 			try? await Task.sleep(for: .milliseconds(600))
 			if let ownWindowID = Set(CGSBridge.menuBarWindowIDs(onScreenOnly: false))
 				.subtracting(windowIDsBeforeStatusItem).first {
 				menuBarController.excludeOwnWindow(ownWindowID)
 			}
-			// Erst jetzt starten: die eigene WindowID ist sicher ausgeschlossen, bevor der
-			// Controller zum ersten Mal enumeriert und ggf. die Trenner anlegt.
+			// Only start now: our own window ID is safely excluded before the controller
+			// enumerates for the first time and possibly creates the separators.
 			menuBarController.start()
 			if wantsSelfTest {
 				await menuBarController.runStartupSelfTest()
@@ -97,36 +97,36 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 		}
 	}
 
-	/// Symbol des eigenen Status-Items je nach Zustand. Der Pfeil zeigt, was der nächste Klick
-	/// tut: ausklappen bzw. wieder einklappen.
+	/// Symbol of our own status item, depending on state. The arrow shows what the next click
+	/// will do: expand, or collapse again.
 	private static let collapsedSymbol = "menubar.arrow.down.rectangle"
 	private static let revealedSymbol = "menubar.arrow.up.rectangle"
 
-	/// Linksklick blendet die versteckten Items ein/aus, Rechtsklick öffnet das Menü.
+	/// A left click reveals or hides the hidden items, a right click opens the menu.
 	@objc
 	private func statusItemClicked() {
 		guard let statusItem, let button = statusItem.button else { return }
 
 		if NSApp.currentEvent?.type == .rightMouseUp {
-			// Nur für die Dauer dieses Klicks anhängen und sofort wieder lösen — `performClick`
-			// blockiert, bis das Menü geschlossen ist.
+			// Attach for the duration of this click only and detach right after —
+			// `performClick` blocks until the menu closes.
 			statusItem.menu = statusMenu
 			button.performClick(nil)
 			statusItem.menu = nil
 			return
 		}
 
-		// ⌥-Klick zeigt zusätzlich „Immer versteckt“ — die Sektion, die die normale Geste
-		// bewusst auslässt.
+		// ⌥-click additionally reveals “Always hidden” — the section the plain gesture
+		// deliberately leaves out.
 		let withOption = NSApp.currentEvent?.modifierFlags.contains(.option) == true
 		menuBarController.toggleReveal(includingAlwaysHidden: withOption)
 	}
 
-	/// Hält das Symbol am Einblend-Zustand — der wechselt auch ohne Klick, sobald der Nutzer
-	/// woanders hinklickt.
+	/// Keeps the symbol in sync with the reveal state — which also changes without a click,
+	/// as soon as the user clicks somewhere else.
 	private func updateStatusItemSymbol(isRevealed: Bool) {
 		guard let button = statusItem?.button else { return }
-		// Ohne Rückfall aufs alte Bild stünde die Menüleiste bei einem fehlenden Symbol leer da.
+		// Without falling back to the old image a missing symbol would leave the menu bar blank.
 		button.image = NSImage(
 			systemSymbolName: isRevealed ? Self.revealedSymbol : Self.collapsedSymbol,
 			accessibilityDescription: "BarT"
@@ -147,19 +147,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
 	@objc
 	func openSettings() {
-		// Prüfen, ob Fenster bereits offen ist
+		// Reuse the window if it is already open.
 		if let existingWindow = settingsWindow, existingWindow.isVisible {
 			existingWindow.makeKeyAndOrderFront(nil)
 			NSApplication.shared.activate(ignoringOtherApps: true)
 			return
 		}
 
-		// Neues Settings-Fenster erstellen
+		// Build a new settings window.
 		let settingsView = SettingsView(controller: menuBarController)
 		let hostingController = NSHostingController(rootView: settingsView)
 
 		let window = NSWindow(contentViewController: hostingController)
-		window.title = "BarT Einstellungen"
+		window.title = "BarT Settings"
 		window.setFrame(NSRect(x: 0, y: 0, width: 480, height: 360), display: false)
 		window.center()
 		window.styleMask = [.titled, .closable, .miniaturizable]

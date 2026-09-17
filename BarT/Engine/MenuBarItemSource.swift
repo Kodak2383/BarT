@@ -2,31 +2,31 @@ import AppKit
 import ApplicationServices
 import CoreGraphics
 
-/// Enumeriert alle Menüleisten-Items aller laufenden Apps.
+/// Enumerates every menu bar item of every running app.
 ///
-/// Rein lesend — diese Klasse verändert nichts an der Menüleiste.
+/// Read-only — this class changes nothing about the menu bar.
 @MainActor
 final class MenuBarItemSource: NSObject {
 	private(set) var items: [MenuBarItem] = []
 
-	/// Liefert die Fenster-IDs, die nie als Item auftauchen sollen — BarTs eigene
-	/// Status-Items (Icon, Trenner). Über die WindowID statt PID/BundleID, weil letztere
-	/// direkt nach einem Drag kurzzeitig falsch zugeordnet werden (siehe ``MenuBarController``).
+	/// Returns the window IDs that must never show up as items — BarT's own status items
+	/// (icon, separators). Keyed by window ID rather than PID/bundle ID, because the latter
+	/// are briefly attributed wrongly right after a drag (see ``MenuBarController``).
 	///
-	/// Bewusst ein Closure statt eines Sets: die Trenner entstehen erst unterwegs, und
-	/// zwischen ihrer Erzeugung und dem Nachtragen in ein Set läge ein Poll-Fenster von bis zu
-	/// zwei Sekunden, in dem sie als ganz normale, verwaltbare Items durchrutschen — mit dem
-	/// Ergebnis, dass die App anfängt, ihre eigenen Trenner zu verschieben.
+	/// Deliberately a closure instead of a set: the separators only come into existence along
+	/// the way, and between creating them and adding them to a set there would be a polling
+	/// window of up to two seconds during which they slip through as perfectly ordinary,
+	/// manageable items — with the result that the app starts moving its own separators.
 	var excludedWindowIDs: () -> Set<CGWindowID> = { [] }
 
-	/// Wird nur aufgerufen, wenn sich die Item-Liste tatsächlich geändert hat.
+	/// Called only when the item list has actually changed.
 	var onChange: (([MenuBarItem]) -> Void)?
 
 	private var pollTask: Task<Void, Never>?
 
-	/// CGS meldet keine Änderungen; es gibt keine Notification für "Item hinzugefügt".
-	/// Deshalb Polling als Basis, die Workspace-Notifications sind nur eine
-	/// Latenz-Verbesserung für den häufigsten Fall (App startet/beendet sich).
+	/// CGS reports no changes; there is no notification for "item added". Hence polling as the
+	/// baseline — the workspace notifications are only a latency improvement for the most
+	/// common case (an app launching or quitting).
 	private let pollInterval: Duration = .seconds(2)
 
 	func start() {
@@ -60,7 +60,7 @@ final class MenuBarItemSource: NSObject {
 		NSWorkspace.shared.notificationCenter.removeObserver(self)
 	}
 
-	/// Liest die Menüleiste sofort aus, ohne den Timer zu benötigen.
+	/// Reads the menu bar right away, without waiting for the timer.
 	@discardableResult
 	func snapshot() -> [MenuBarItem] {
 		items = Self.enumerate(excluding: excludedWindowIDs())
@@ -76,8 +76,8 @@ final class MenuBarItemSource: NSObject {
 
 	@objc
 	private func workspaceDidChange(_ notification: Notification) {
-		// Eine frisch gestartete App registriert ihr Status-Item erst einige
-		// hundert Millisekunden nach der Launch-Notification.
+		// A freshly launched app only registers its status item a few hundred milliseconds
+		// after the launch notification.
 		Task { [weak self] in
 			try? await Task.sleep(for: .milliseconds(750))
 			self?.refresh()
@@ -86,25 +86,25 @@ final class MenuBarItemSource: NSObject {
 
 	// MARK: Enumeration
 
-	/// Fensterebene echter Status-Items. Die Menüleiste selbst (Owner "Window Server")
-	/// taucht in derselben CGS-Liste auf, liegt aber auf Ebene 24 und ist kein Item.
+	/// Window level of genuine status items. The menu bar itself (owner "Window Server") shows
+	/// up in the same CGS list, but sits at level 24 and is not an item.
 	private static let statusItemLayer = Int(CGWindowLevelForKey(.statusWindow))
 
-	/// Maximale Abweichung zwischen AX- und CGS-Mitte eines Items. Live gemessen: 0.0 pt.
-	/// Items liegen mindestens 24 pt auseinander, eine Fehlzuordnung ist damit ausgeschlossen.
+	/// Maximum deviation between an item's AX and CGS center. Measured live: 0.0 pt. Items are
+	/// at least 24 pt apart, which rules out a mismatch.
 	private static let midXTolerance: CGFloat = 2
 
-	/// Liefert alle Menüleisten-Items, sortiert von links nach rechts.
-	/// - Parameter excludedWindowIDs: Fenster, die nie als Item zurückkommen sollen
-	///   (BarTs eigene Status-Items).
+	/// Returns every menu bar item, ordered left to right.
+	/// - Parameter excludedWindowIDs: windows that must never come back as items (BarT's own
+	///   status items).
 	static func enumerate(excluding excludedWindowIDs: Set<CGWindowID> = []) -> [MenuBarItem] {
 		let windowIDs = Set(CGSBridge.menuBarWindowIDs(onScreenOnly: false))
 		guard !windowIDs.isEmpty else { return [] }
 		let onScreen = Set(CGSBridge.menuBarWindowIDs(onScreenOnly: true))
 
-		// `CGWindowListCreateDescriptionFromArray` liefert für Menüleisten-Fenster
-		// verifiziert eine leere Liste. Deshalb die vollständige Fensterliste holen und
-		// gegen die CGS-IDs schneiden — ein Aufruf, ~100 Einträge.
+		// `CGWindowListCreateDescriptionFromArray` verifiably returns an empty list for menu
+		// bar windows. So fetch the full window list instead and intersect it with the CGS
+		// IDs — one call, ~100 entries.
 		let descriptions = (CGWindowListCopyWindowInfo([.optionAll], kCGNullWindowID)
 			as? [[String: Any]] ?? [])
 			.filter { description in
@@ -117,9 +117,9 @@ final class MenuBarItemSource: NSObject {
 
 		let owners = accessibilityOwners()
 
-		// Zweistufig: zuerst die Rohdaten sammeln und nach x sortieren, danach erst pro
-		// Gruppe (gleicher bundleID+title) die Geschwister-Position vergeben — die braucht
-		// die endgültige Links-nach-rechts-Reihenfolge, um stabil zu sein.
+		// Two passes: first collect the raw data and sort it by x, and only then assign the
+		// sibling position per group (same bundleID+title) — that position needs the final
+		// left-to-right order to be stable.
 		struct RawItem {
 			let windowID: CGWindowID
 			let pid: pid_t
@@ -135,18 +135,18 @@ final class MenuBarItemSource: NSObject {
 		for description in descriptions {
 			guard
 				let windowID = description[kCGWindowNumber as String] as? CGWindowID,
-				// Eigene Items (Status-Icon, Trenner) gehören nie in die verwaltete Liste:
-				// sie sind kein normales, vom Nutzer versteck-/zeigbares Item. Live
-				// beobachtet, hat ihre Aufnahme eine Endlosschleife ausgelöst — die
-				// Reconcile-Logik hielt den (fast immer "nicht sichtbaren") Trenner für ein
-				// kaputtes Item und versuchte ihn endlos zu reparieren.
-				// Über die WindowID statt PID/BundleID: beide waren direkt nach einem Drag
-				// live falsch (fälschlich dem Kontrollzentrum zugeordnet) — die WindowID ist
-				// von dieser Race unberührt.
+				// Our own items (status icon, separators) never belong in the managed list:
+				// they are not ordinary items the user can hide or show. Including them was
+				// observed live to trigger an endless loop — the reconcile logic took the
+				// (almost always "not visible") separator for a broken item and tried to
+				// repair it forever.
+				// Keyed by window ID rather than PID/bundle ID: both were live-observed to be
+				// wrong right after a drag (misattributed to Control Center) — the window ID
+				// is untouched by that race.
 				!excludedWindowIDs.contains(windowID),
 				let hostPID = description[kCGWindowOwnerPID as String] as? pid_t,
-				// Frame live über CGS statt aus kCGWindowBounds: die Beschreibung ist ein
-				// Snapshot und liegt nach einem Drag messbar hinter der Realität zurück.
+				// Frame read live via CGS rather than from kCGWindowBounds: the description is
+				// a snapshot and measurably lags reality after a drag.
 				let frame = CGSBridge.frame(for: windowID)
 			else { continue }
 
@@ -192,35 +192,35 @@ final class MenuBarItemSource: NSObject {
 		}
 	}
 
-	// MARK: Besitzer-Ermittlung über die Bedienungshilfen
+	// MARK: Owner lookup via the accessibility API
 
-	/// Ein von einer App gemeldetes eigenes Menüleisten-Item.
+	/// A menu bar item an app reports as its own.
 	private struct ItemOwner {
-		/// Horizontale Mitte in globalen CG-Koordinaten.
+		/// Horizontal center in global CG coordinates.
 		let midX: CGFloat
 		let pid: pid_t
 		let bundleID: String
 	}
 
-	/// Liest aus jeder laufenden App ihre *eigenen* Menüleisten-Items aus.
+	/// Reads each running app's *own* menu bar items.
 	///
-	/// `kCGWindowOwnerPID` ist für Status-Item-Fenster unbrauchbar: macOS rendert sie in
-	/// einem Hosting-Prozess, die Fensterliste meldet deshalb für *alle* Items dieselbe PID.
-	/// Live verifiziert auf macOS 26.6.2 — alle 21 Items kamen als `com.apple.controlcenter`
-	/// (pid 674) zurück, obwohl 11 verschiedene Apps beteiligt waren. Auch der CGS-Weg
-	/// (`CGSGetWindowOwner`) liefert dieselbe Hosting-Connection und hilft nicht.
+	/// `kCGWindowOwnerPID` is useless for status item windows: macOS renders them in a hosting
+	/// process, so the window list reports the same PID for *all* items. Verified live on
+	/// macOS 26.6.2 — all 21 items came back as `com.apple.controlcenter` (pid 674) although
+	/// 11 different apps were involved. The CGS route (`CGSGetWindowOwner`) returns the same
+	/// hosting connection and does not help either.
 	///
-	/// Die einzige belastbare Quelle ist die AX-Hierarchie: `kAXExtrasMenuBarAttribute`
-	/// liefert pro App nur deren eigene Items. Zugeordnet wird über die horizontale Mitte —
-	/// die AX-Rahmen sind gegenüber den CGS-Rahmen um 1 pt aufgeweitet, die Mitte stimmt
-	/// exakt. (Ansatz wie in "Ice", MIT, github.com/jordanbaird/Ice.)
+	/// The only dependable source is the AX hierarchy: `kAXExtrasMenuBarAttribute` returns
+	/// only an app's own items. The match is made on the horizontal center — the AX frames are
+	/// inflated by 1 pt compared to the CGS frames, but the center matches exactly. (Same
+	/// approach as in "Ice", MIT, github.com/jordanbaird/Ice.)
 	private static func accessibilityOwners() -> [ItemOwner] {
 		guard AccessibilityPermission.isTrusted else { return [] }
 
 		var owners: [ItemOwner] = []
 		for app in NSWorkspace.shared.runningApplications {
 			let element = AXUIElementCreateApplication(app.processIdentifier)
-			// Ohne Timeout hält ein hängender Prozess den ganzen Poll-Durchlauf auf.
+			// Without a timeout one stuck process holds up the entire polling pass.
 			AXUIElementSetMessagingTimeout(element, 1)
 
 			var menuBarValue: CFTypeRef?
@@ -245,8 +245,8 @@ final class MenuBarItemSource: NSObject {
 				?? "pid.\(app.processIdentifier)"
 
 			for child in children {
-				// Das Kontrollzentrum meldet auch nicht platzierte Items; die haben einen
-				// Nullrahmen und würden sonst auf die Mitte 0 matchen.
+				// Control Center also reports items that are not placed; those have a zero
+				// frame and would otherwise match on center 0.
 				guard let frame = axFrame(of: child), frame.width > 0 else { continue }
 				owners.append(
 					ItemOwner(midX: frame.midX, pid: app.processIdentifier, bundleID: bundleID)
@@ -281,20 +281,20 @@ final class MenuBarItemSource: NSObject {
 		return CGRect(origin: origin, size: size)
 	}
 
-	/// Konsolen-Dump für den Debug-Menüpunkt.
+	/// Console dump for the debug menu item.
 	static func debugDump() {
 		let items = enumerate()
 		let owners = Set(items.map(\.id.bundleID))
-		print("[BarT] \(items.count) Menüleisten-Items aus \(owners.count) Apps (links → rechts):")
+		print("[BarT] \(items.count) menu bar items from \(owners.count) apps (left → right):")
 		if !AccessibilityPermission.isTrusted {
-			print("[BarT]   Hinweis: keine Bedienungshilfen-Berechtigung — ohne sie fällt die")
-			print("[BarT]   Besitzer-Ermittlung auf den Hosting-Prozess zurück und ist falsch.")
+			print("[BarT]   Note: no accessibility permission — without it the owner lookup")
+			print("[BarT]   falls back to the hosting process and is wrong.")
 		}
 		if items.contains(where: { $0.id.title.isEmpty }) {
-			print("[BarT]   Hinweis: Items ohne Titel lassen sich nicht einzeln persistieren.")
+			print("[BarT]   Note: items without a title cannot be persisted individually.")
 		}
 		for item in items {
-			let flag = item.isOnScreen ? "sichtbar " : "versteckt"
+			let flag = item.isOnScreen ? "visible" : "hidden "
 			let frame = String(
 				format: "x=%7.1f w=%5.1f", item.frame.minX, item.frame.width
 			)

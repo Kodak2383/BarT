@@ -1,6 +1,6 @@
 import Foundation
 
-/// Persistiert ``MenuBarLayout`` als JSON in `UserDefaults`.
+/// Persists ``MenuBarLayout`` as JSON in `UserDefaults`.
 @MainActor
 final class LayoutStore {
 	private static let defaultsKey = "de.andreduhme.BarT.layout"

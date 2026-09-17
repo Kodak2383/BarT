@@ -1,41 +1,40 @@
 import AppKit
 import CoreGraphics
 
-/// Laufzeit-Identität eines Menüleisten-Items.
+/// Runtime identity of a menu bar item.
 ///
-/// `windowID` und `ownerPID` sind nur innerhalb einer Sitzung gültig — beide ändern sich,
-/// sobald die besitzende App neu startet. Für Persistenz dient ausschließlich ``storageKey``.
+/// `windowID` and `ownerPID` are valid within a single session only — both change as soon
+/// as the owning app restarts. Persistence relies on ``storageKey`` exclusively.
 struct MenuBarItemID: Hashable, Sendable {
 	let windowID: CGWindowID
 	let ownerPID: pid_t
 
-	/// Bundle-ID der besitzenden App, sonst deren Prozessname.
+	/// Bundle ID of the owning app, or its process name as a fallback.
 	let bundleID: String
 
-	/// Fenstertitel des Items. Apps mit mehreren Items (Kontrollzentrum, SystemUIServer)
-	/// unterscheiden sich nur hierüber.
+	/// The item's window title. Apps with several items (Control Center, SystemUIServer)
+	/// differ by this alone.
 	///
-	/// In einem Live-Test auf macOS 26 lieferte `kCGWindowName` auch ohne
-	/// Bildschirmaufnahme-Berechtigung sprechende Titel ("CPU_mini", "WiFi", "Clock").
-	/// Live in Phase 2 gemessen: für die Kontrollzentrum-Module selbst ist der Titel leer
-	/// oder identisch — ohne ``siblingIndex`` fallen sie alle auf denselben Anzeigenamen
-	/// zusammen.
+	/// In a live test on macOS 26 `kCGWindowName` returned meaningful titles ("CPU_mini",
+	/// "WiFi", "Clock") even without screen recording permission. Measured live during
+	/// phase 2: for the Control Center modules themselves the title is empty or identical —
+	/// without ``siblingIndex`` they all collapse onto the same display name.
 	let title: String
 
-	/// 0-basierte Position innerhalb der Gruppe von Items mit identischem `bundleID`+`title`,
-	/// in Reihenfolge von links nach rechts. Löst genau den Fall auf, in dem mehrere Items
-	/// (z.B. alle Kontrollzentrum-Module) sich sonst nicht unterscheiden ließen.
+	/// 0-based position within the group of items sharing `bundleID`+`title`, ordered left
+	/// to right. Resolves exactly the case where several items (all Control Center modules,
+	/// say) would otherwise be indistinguishable.
 	let siblingIndex: Int
-	/// Größe dieser Gruppe. Nur bei mehr als einem Mitglied wird die Position überhaupt
-	/// in ``storageKey`` und ``displayName`` sichtbar — Apps mit genau einem Item behalten
-	/// ihren unveränderten, seit Phase 1 stabilen Schlüssel.
+	/// Size of that group. The position only shows up in ``storageKey`` and ``displayName``
+	/// when the group has more than one member — apps with exactly one item keep the
+	/// unchanged key they have had since phase 1.
 	let siblingCount: Int
 
-	/// Über App-Neustarts hinweg stabiler Schlüssel; einziges Feld, das in ``MenuBarLayout`` landet.
+	/// Key that stays stable across app restarts; the only field that ends up in ``MenuBarLayout``.
 	///
-	/// Bleibt nur stabil, solange sich die Reihenfolge gleichnamiger Items nicht ändert
-	/// (z.B. durch Umsortieren im Kontrollzentrum selbst) — bekannte Restunschärfe, siehe
-	/// ``siblingIndex``.
+	/// It stays stable only as long as the order of identically named items does not change
+	/// (by rearranging Control Center itself, for instance) — a known residual fuzziness,
+	/// see ``siblingIndex``.
 	var storageKey: String {
 		let base = title.isEmpty ? bundleID : "\(bundleID):\(title)"
 		return siblingCount > 1 ? "\(base)#\(siblingIndex)" : base
@@ -48,15 +47,15 @@ struct MenuBarItemID: Hashable, Sendable {
 	}
 }
 
-/// Ein Menüleisten-Item mit seiner aktuellen Geometrie.
+/// A menu bar item together with its current geometry.
 struct MenuBarItem: Hashable, Sendable {
 	let id: MenuBarItemID
 
-	/// Globale CG-Koordinaten (Ursprung oben links), siehe ``CGSBridge/frame(for:)``.
+	/// Global CG coordinates (origin top left), see ``CGSBridge/frame(for:)``.
 	let frame: CGRect
 
-	/// `false`, sobald das Item aus dem sichtbaren Bereich geschoben wurde — also genau
-	/// dann, wenn es durch den Trenner versteckt ist.
+	/// `false` once the item has been pushed out of the visible area — that is, exactly
+	/// when the separator hides it.
 	let isOnScreen: Bool
 
 	var windowID: CGWindowID { id.windowID }

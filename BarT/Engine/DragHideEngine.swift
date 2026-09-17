@@ -2,36 +2,36 @@ import AppKit
 import CoreGraphics
 import OSLog
 
-/// Versteckt und zeigt fremde Menüleisten-Items über einen simulierten Cmd-Drag.
+/// Hides and shows other apps' menu bar items via a simulated Cmd-drag.
 ///
-/// ## Funktionsprinzip
-/// macOS ordnet Status-Items nativ per Cmd+Drag um. Die Engine erzeugt zwei eigene
-/// Trenner-Status-Items und schiebt Ziel-Items per synthetischem Cmd-Drag daneben.
-/// Status-Items werden vom rechten Bildschirmrand nach links gelayoutet: vergrößert man die
-/// Breite eines Trenners, rutscht alles *links* von ihm aus dem sichtbaren Bereich.
+/// ## How it works
+/// macOS natively rearranges status items on Cmd-drag. The engine creates two status items of
+/// its own to act as separators and pushes target items next to them with a synthetic
+/// Cmd-drag. Status items are laid out from the right edge of the screen leftwards: growing a
+/// separator's width pushes everything to its *left* out of the visible area.
 ///
-/// Daraus ergeben sich drei Sektionen, von rechts nach links:
+/// That yields three sections, from right to left:
 ///
-///     [ visible ] [hidden-Trenner] [ hidden ] [alwaysHidden-Trenner] [ alwaysHidden ]
+///     [ visible ] [hidden separator] [ hidden ] [alwaysHidden separator] [ alwaysHidden ]
 ///
-/// Welche Sektionen sichtbar sind, entscheidet ``reveal``. Wo ein Item wirklich steht, sagt
-/// ``placement(of:)`` — nicht `isOnScreen`.
+/// Which sections are visible is decided by ``reveal``. Where an item actually sits is
+/// answered by ``placement(of:)`` — not by `isOnScreen`.
 ///
-/// ## Bekannte Grenzen (nicht behebbar, nur abmilderbar)
-/// - Es gibt keine offizielle API dafür. Die Technik beruht auf privaten CGS-Aufrufen
-///   (siehe `Bridging.swift`) und darauf, dass macOS Cmd-Drag auf Status-Items erlaubt.
-/// - Der Drag läuft über echte Maus-Events. Der Cursor wird währenddessen ausgeblendet und
-///   danach zurückgesetzt, ein sichtbares Zucken ist aber möglich.
-/// - Bewegt der Nutzer währenddessen selbst die Maus oder hält er Modifier gedrückt,
-///   schlägt der Drag fehl oder verschiebt das falsche Item.
-/// - Reagiert der Owner-Prozess des Ziel-Items nicht, nimmt er den mouseDown an, aber nie
-///   den mouseUp — der Drag-Zustand bliebe hängen. Deshalb wird die Responsivität vorher
-///   geprüft und am Ende in jedem Fall ein mouseUp nachgeschoben.
-/// - Items, die macOS selbst fixiert (Uhr, Kontrollzentrum), lassen sich nicht bewegen;
-///   der Drag läuft dann erfolglos durch und die Verifikation schlägt fehl.
+/// ## Known limits (not fixable, only mitigable)
+/// - There is no official API for this. The technique relies on private CGS calls (see
+///   `Bridging.swift`) and on macOS allowing Cmd-drag on status items.
+/// - The drag runs on real mouse events. The cursor is hidden for the duration and restored
+///   afterwards, but a visible twitch is possible.
+/// - If the user moves the mouse themselves meanwhile, or holds modifiers down, the drag fails
+///   or moves the wrong item.
+/// - If the target item's owner process is unresponsive it accepts the mouseDown but never the
+///   mouseUp — the drag state would hang. Responsiveness is therefore checked beforehand and a
+///   mouseUp is pushed after the fact in every case.
+/// - Items macOS pins itself (clock, Control Center) cannot be moved; the drag then runs
+///   through without effect and verification fails.
 ///
-/// Diese Klasse startet nichts von selbst. Die Trenner entstehen erst beim ersten Aufruf von
-/// ``move(_:to:)``.
+/// This class starts nothing on its own. The separators only come into being on the first call
+/// to ``move(_:to:)``.
 @MainActor
 final class DragHideEngine {
 	enum DragError: LocalizedError {
@@ -48,42 +48,41 @@ final class DragHideEngine {
 		var errorDescription: String? {
 			switch self {
 			case .notTrusted:
-				"Keine Bedienungshilfen-Berechtigung."
+				"No accessibility permission."
 			case .ownerUnresponsive(let name):
-				"Die App „\(name)“ reagiert nicht."
+				"The app “\(name)” is not responding."
 			case .separatorUnavailable:
-				"Trenner-Item konnte nicht in der Menüleiste platziert werden."
+				"The separator item could not be placed in the menu bar."
 			case .separatorOrder:
-				"Die beiden Trenner stehen in der falschen Reihenfolge in der Menüleiste."
+				"The two separators sit in the wrong order in the menu bar."
 			case .itemGone:
-				"Das Item existiert nicht mehr."
+				"The item no longer exists."
 			case .eventSourceUnavailable:
-				"CGEventSource konnte nicht erzeugt werden."
+				"Could not create a CGEventSource."
 			case .eventCreationFailed:
-				"Maus-Event konnte nicht erzeugt werden."
+				"Could not create a mouse event."
 			case .eventDeliveryTimeout:
-				"Maus-Event wurde nicht rechtzeitig zugestellt."
+				"The mouse event was not delivered in time."
 			case .verificationFailed(let name):
-				"„\(name)“ landete nach mehreren Versuchen nicht an der erwarteten Position."
+				"“\(name)” did not end up at the expected position after several attempts."
 			}
 		}
 	}
 
-	/// Ein eigenes Status-Item, das als Grenze zwischen zwei Sektionen dient.
+	/// A status item of our own that acts as the boundary between two sections.
 	@MainActor
 	private final class Separator {
-		/// Breite im eingeklappten Zustand — so breit, dass alles links davon aus der
-		/// Menüleiste geschoben wird.
+		/// Width while collapsed — wide enough to push everything to its left out of the menu bar.
 		private static let collapsedLength: CGFloat = 10_000
 		private static let expandedLength: CGFloat = 24
 
 		private let item: NSStatusItem
-		/// Menüleisten-Fenster, die es vor *dieser* Erzeugung schon gab — Grundlage der
-		/// Diff-Erkennung in ``realizedWindowID()``.
+		/// Menu bar windows that already existed before *this* one was created — the basis for
+		/// the diff in ``realizedWindowID()``.
 		private let windowIDsBefore: Set<CGWindowID>
 		private var cachedWindowID: CGWindowID?
 
-		/// `true` = alles links von diesem Trenner ist aus dem sichtbaren Bereich geschoben.
+		/// `true` = everything to the left of this separator is pushed out of the visible area.
 		var isCollapsed: Bool {
 			didSet { item.length = isCollapsed ? Self.collapsedLength : Self.expandedLength }
 		}
@@ -96,7 +95,7 @@ final class DragHideEngine {
 			)
 			item.button?.image = NSImage(
 				systemSymbolName: "chevron.compact.left",
-				accessibilityDescription: "BarT Trenner"
+				accessibilityDescription: "BarT separator"
 			)
 			item.button?.image?.isTemplate = true
 		}
@@ -104,16 +103,16 @@ final class DragHideEngine {
 		var windowID: CGWindowID? { cachedWindowID }
 		var frame: CGRect? { cachedWindowID.flatMap(CGSBridge.frame(for:)) }
 
-		/// CGWindowID, sobald der Trenner fertig gelayoutet in der Menüleiste steht.
+		/// The CGWindowID, as soon as the separator sits fully laid out in the menu bar.
 		///
-		/// `button.window.windowNumber` ist dafür seit macOS 26 unbrauchbar: Status-Items
-		/// werden out-of-process gehostet, die lokale `NSWindow` meldet konstant
-		/// `0x2_0000_0000` (live gemessen). Die echte ID ist stattdessen das
-		/// Menüleisten-Fenster, das nach der Erzeugung neu in der CGS-Liste auftaucht.
+		/// `button.window.windowNumber` has been useless for this since macOS 26: status items
+		/// are hosted out of process, and the local `NSWindow` constantly reports
+		/// `0x2_0000_0000` (measured live). The real ID is instead the menu bar window that
+		/// newly appears in the CGS list after creation.
 		///
-		/// Gewartet wird auf einen *stabilen* Rahmen statt auf einen festen Sleep: der Trenner
-		/// fährt animiert ein (gemessen ~450 ms, von 12×10 auf 40×30 pt). Ein Drop auf einen
-		/// Zwischenstand landet an der falschen Stelle.
+		/// What is awaited is a *stable* frame rather than a fixed sleep: the separator slides
+		/// in with an animation (measured at ~450 ms, from 12×10 to 40×30 pt). A drop onto an
+		/// intermediate state lands in the wrong place.
 		func realizedWindowID() async -> CGWindowID? {
 			if let cachedWindowID { return cachedWindowID }
 			var lastFrame: CGRect?
@@ -141,30 +140,30 @@ final class DragHideEngine {
 	private static let log = Logger(subsystem: "de.andreduhme.BarT", category: "DragHideEngine")
 
 	private static let maxAttempts = 3
-	/// Wie lange auf die Bestätigung am Session-Tap gewartet wird (Wert aus Ice).
+	/// How long to wait for confirmation at the session tap (value taken from Ice).
 	private static let scrombleTimeoutMilliseconds = 50
-	/// Toleranz, weil macOS die Items nach einem Drop um Sub-Pixel neu ausrichtet.
+	/// Tolerance, because macOS realigns the items by sub-pixels after a drop.
 	private static let tolerance: CGFloat = 1
 
-	/// Grenze zwischen `visible` (rechts davon) und `hidden` (links davon).
+	/// Boundary between `visible` (to its right) and `hidden` (to its left).
 	private var hiddenSeparator: Separator?
-	/// Grenze zwischen `hidden` (rechts davon) und `alwaysHidden` (links davon). Liegt immer
-	/// links vom ``hiddenSeparator`` — sichergestellt in ``prepareSeparators()``.
+	/// Boundary between `hidden` (to its right) and `alwaysHidden` (to its left). Always sits
+	/// left of the ``hiddenSeparator`` — ensured in ``prepareSeparators()``.
 	private var alwaysHiddenSeparator: Separator?
 
-	/// Wie weit die Leiste gerade aufgeklappt ist.
+	/// How far the bar is currently expanded.
 	enum Reveal {
-		/// Nur `visible` — der Normalzustand.
+		/// `visible` only — the normal state.
 		case none
-		/// Zusätzlich `hidden`.
+		/// Plus `hidden`.
 		case hidden
-		/// Alles, auch `alwaysHidden`.
+		/// Everything, `alwaysHidden` included.
 		case all
 	}
 
-	/// Nie sind beide Trenner gleichzeitig breit: es genügt, dass der jeweils rechte alles
-	/// links von sich hinausschiebt. Zwei 10.000-pt-Items nebeneinander würden die Leiste
-	/// ohne Not um 20.000 pt verschieben.
+	/// The two separators are never wide at the same time: it is enough for whichever one is
+	/// further right to push everything left of it out. Two 10,000 pt items side by side would
+	/// shift the bar by 20,000 pt for no reason.
 	var reveal: Reveal = .none {
 		didSet {
 			hiddenSeparator?.isCollapsed = hiddenSeparatorCollapses
@@ -175,24 +174,24 @@ final class DragHideEngine {
 	private var hiddenSeparatorCollapses: Bool { reveal == .none }
 	private var alwaysHiddenSeparatorCollapses: Bool { reveal == .hidden }
 
-	/// Fenster-IDs der eigenen Trenner, soweit angelegt — zum Ausschluss aus der verwalteten
-	/// Item-Liste. Bewusst die WindowID, nicht PID/BundleID: genau in der Race, in der die
-	/// Besitzer-Zuordnung eigene Fenster fälschlich dem Kontrollzentrum zuschreibt, bleibt
-	/// die WindowID unberührt korrekt.
+	/// Window IDs of our own separators, as far as they exist — for exclusion from the managed
+	/// item list. Deliberately the window ID, not PID/bundle ID: in exactly the race where the
+	/// owner lookup misattributes our own windows to Control Center, the window ID stays
+	/// correct.
 	var separatorWindowIDs: Set<CGWindowID> {
 		Set([hiddenSeparator?.windowID, alwaysHiddenSeparator?.windowID].compactMap { $0 })
 	}
 
-	/// Wo das Item *tatsächlich* steht, gemessen an den Trennern.
+	/// Where the item *actually* sits, measured against the separators.
 	///
-	/// `isOnScreen` taugt dafür nicht: `hidden` und `alwaysHidden` sind beide unsichtbar,
-	/// solange nichts eingeblendet ist, und eingeblendet ist umgekehrt auch Verstecktes
-	/// sichtbar. Die Lage relativ zu den Trennern stimmt dagegen in jedem Zustand.
+	/// `isOnScreen` is no good for this: `hidden` and `alwaysHidden` are both invisible as long
+	/// as nothing is revealed, and conversely, while revealed, hidden things are visible too.
+	/// The position relative to the separators, by contrast, is correct in every state.
 	///
-	/// - Returns: `nil`, wenn das Fenster verschwunden ist.
+	/// - Returns: `nil` when the window has vanished.
 	func placement(of item: MenuBarItem) -> MenuBarLayout.Section? {
 		guard let frame = CGSBridge.frame(for: item.windowID) else { return nil }
-		// Ohne Trenner gibt es nichts, wovon etwas links liegen könnte.
+		// Without separators there is nothing for anything to be to the left of.
 		guard
 			let hiddenFrame = hiddenSeparator?.frame,
 			frame.maxX <= hiddenFrame.minX + Self.tolerance
@@ -211,16 +210,16 @@ final class DragHideEngine {
 		alwaysHiddenSeparator = nil
 	}
 
-	// MARK: Trenner
+	// MARK: Separators
 
-	/// Legt beide Trenner an (falls nötig) und wartet, bis sie stabil in der Leiste stehen.
+	/// Creates both separators (if needed) and waits until they sit stably in the bar.
 	///
-	/// Die Reihenfolge ist entscheidend: der `alwaysHidden`-Trenner muss links vom
-	/// `hidden`-Trenner liegen, sonst kehrt sich jede Zuordnung um. macOS platziert ein neues
-	/// Status-Item links von den bestehenden — deshalb strikt nacheinander, und jeder erst
-	/// fertig realisiert, bevor der nächste dazukommt: sonst greift dessen WindowID-Diff noch
-	/// das gerade erst erscheinende Fenster des Vorgängers ab. Zugesichert ist die Platzierung
-	/// nirgends, also wird sie am Ende geprüft.
+	/// The order is crucial: the `alwaysHidden` separator has to sit left of the `hidden`
+	/// separator, otherwise every assignment is inverted. macOS places a new status item left
+	/// of the existing ones — hence strictly one after another, each fully realized before the
+	/// next joins: otherwise the next one's window ID diff would pick up its predecessor's
+	/// window, which is only just appearing. That placement is guaranteed nowhere, so it is
+	/// verified at the end.
 	private func prepareSeparators() async throws {
 		if hiddenSeparator != nil, alwaysHiddenSeparator != nil { return }
 		removeSeparators()
@@ -247,8 +246,8 @@ final class DragHideEngine {
 		}
 	}
 
-	/// Wohin gedroppt wird, damit das Item in der gewünschten Sektion landet — samt dem
-	/// Trenner-Fenster, das der Drop adressiert.
+	/// Where to drop so the item ends up in the requested section — together with the
+	/// separator window the drop addresses.
 	private func dropTarget(
 		for section: MenuBarLayout.Section
 	) -> (point: CGPoint, windowID: CGWindowID)? {
@@ -270,10 +269,11 @@ final class DragHideEngine {
 			throw DragError.ownerUnresponsive(item.displayName)
 		}
 
-		// Trenner anlegen und layoutfertig abwarten, *bevor* ihre Geometrie gelesen wird.
+		// Create the separators and wait for them to finish laying out *before* reading their
+		// geometry.
 		try await prepareSeparators()
 
-		// Cursor sichern und in jedem Fall wieder freigeben — auch wenn der Drag wirft.
+		// Save the cursor and release it again in every case — even if the drag throws.
 		let savedCursor = CGEvent(source: nil)?.location
 		NSCursor.hide()
 		defer {
@@ -288,8 +288,8 @@ final class DragHideEngine {
 			do {
 				try await performDrag(item, to: section)
 			} catch {
-				// Ein fehlgeschlagener Versuch beendet nicht die Serie — der nächste kann
-				// durchkommen. Nur wenn alle scheitern, wirft ``verificationFailed``.
+				// A failed attempt does not end the series — the next one may get through.
+				// Only if all of them fail does ``verificationFailed`` throw.
 				Self.log.warning(
 					"Attempt \(attempt) for \(item.displayName, privacy: .public) threw: \(error.localizedDescription, privacy: .public)"
 				)
@@ -300,14 +300,14 @@ final class DragHideEngine {
 				return
 			}
 			Self.log.warning("Attempt \(attempt) for \(item.displayName, privacy: .public) failed")
-			// ponytail: fester Delay statt Ice' "wakeUpItem"-Aufweckklick. Wenn sich im
-			// Praxistest zeigt, dass eingeschlafene Prozesse den ersten Drag regelmäßig
-			// verschlucken, hier einen Cmd-Down/Up an Ort und Stelle einschieben.
+			// ponytail: a fixed delay instead of Ice's "wakeUpItem" wake-up click. If practice
+			// shows that dormant processes regularly swallow the first drag, insert a
+			// Cmd-down/up on the spot here.
 			try? await Task.sleep(for: .milliseconds(80))
 		}
 
-		// Sicherheitsnetz: falls ein mouseDown ohne wirksamen mouseUp durchkam, hier
-		// definitiv loslassen, damit der Zielprozess nicht im Drag-Zustand bleibt.
+		// Safety net: in case a mouseDown got through without an effective mouseUp, definitely
+		// let go here so the target process does not stay in the drag state.
 		releaseDrag(item)
 		throw DragError.verificationFailed(item.displayName)
 	}
@@ -323,9 +323,9 @@ final class DragHideEngine {
 		}
 		permitAllEvents()
 
-		// Startpunkt bewusst weit außerhalb jedes Bildschirms: welches Item gezogen wird,
-		// entscheiden die windowID-Felder des Events, nicht die Cursorposition. So gerät
-		// kein anderes Item unter den simulierten Zeiger. (Technik aus Ice, MIT.)
+		// The start point deliberately sits far outside every screen: which item gets dragged
+		// is decided by the event's windowID fields, not by the cursor position. That way no
+		// other item ends up under the simulated pointer. (Technique from Ice, MIT.)
 		let startPoint = CGPoint(x: 20_000, y: 20_000)
 
 		guard
@@ -340,10 +340,10 @@ final class DragHideEngine {
 		else { throw DragError.eventCreationFailed }
 
 		try await scromble(mouseDown, pid: item.ownerPID)
-		// Zwischen down und up wird bewusst nicht abgebrochen: ein mouseDown ohne mouseUp
-		// hinterlässt im Zielprozess einen hängenden Drag.
-		// `false` heißt: der Zielprozess hat den Drag nicht angenommen — der aussagekräftigste
-		// Einzelwert bei der Fehlersuche, deshalb bleibt er als Debug-Log stehen.
+		// Deliberately no bailing out between down and up: a mouseDown without a mouseUp
+		// leaves a hanging drag in the target process.
+		// `false` means the target process did not accept the drag — the single most telling
+		// value when tracking down failures, which is why it stays as a debug log.
 		let moved = await waitForFrameChange(of: item.windowID, from: itemFrame)
 		Self.log.debug(
 			"\(item.displayName, privacy: .public) picked up: \(moved), target \(target.point.x)"
@@ -357,17 +357,17 @@ final class DragHideEngine {
 		try? await Task.sleep(for: .milliseconds(30))
 	}
 
-	/// Stellt ein Maus-Event so zu, dass der Zielprozess es als echten Drag akzeptiert.
+	/// Delivers a mouse event in a way that makes the target process accept it as a real drag.
 	///
-	/// Ein reines `postToPid` genügt nicht — live verifiziert: der Drag lief fehlerfrei
-	/// durch, das Item blieb aber exakt stehen. Das Event landet dabei nur in der
-	/// Event-Queue der Ziel-App; das Fenstersystem sieht nie einen Drag beginnen, also
-	/// startet die Umsortier-Mechanik der Menüleiste gar nicht erst.
+	/// A plain `postToPid` is not enough — verified live: the drag ran through without error,
+	/// but the item stayed exactly where it was. The event then only lands in the target app's
+	/// event queue; the window system never sees a drag begin, so the menu bar's rearranging
+	/// machinery never starts in the first place.
 	///
-	/// Der Umweg: ein Null-Event an den Zielprozess posten und im zugehörigen Tap das
-	/// echte Event an den *Session*-Tap weiterreichen. Erst wenn es dort beobachtet
-	/// wurde — das System es also gesehen hat — geht es per `postToPid` an den Prozess.
-	/// Technik ("scromble") 1:1 aus Ice (MIT), `MenuBarItemManager.scrombleEvent`.
+	/// The detour: post a null event to the target process and, in the tap belonging to it,
+	/// forward the real event to the *session* tap. Only once it has been observed there — so
+	/// once the system has seen it — does it go to the process via `postToPid`. Technique
+	/// ("scromble") taken one to one from Ice (MIT), `MenuBarItemManager.scrombleEvent`.
 	private func scromble(_ event: CGEvent, pid: pid_t) async throws {
 		guard let nullEvent = CGEvent(source: nil) else { throw DragError.eventCreationFailed }
 		let nullUserData = Int64(truncatingIfNeeded: Int(bitPattern: ObjectIdentifier(nullEvent)))
@@ -394,7 +394,7 @@ final class DragHideEngine {
 						}
 						tap.disable()
 						event.post(tap: .cgSessionEventTap)
-						return nil // Das Null-Event selbst darf den Prozess nicht erreichen.
+						return nil // The null event itself must not reach the process.
 					}
 				),
 				let sessionTap = EventTap(
@@ -428,22 +428,22 @@ final class DragHideEngine {
 		}
 	}
 
-	/// Nach dem Drop ordnet macOS die Leiste animiert neu — Item *und* Trenner wandern
-	/// dabei noch. Ein einzelner Vergleich direkt nach dem mouseUp trifft deshalb
-	/// zuverlässig einen Zwischenstand (live gemessen: Rahmen überlappten sich um 18 pt,
-	/// die Trennerbreite schwankte zwischen 38 und 41 pt). Also bis zum Einrasten prüfen.
-	/// Verlangt zwei aufeinanderfolgende Treffer statt eines einzelnen: live beobachtet hat
-	/// ein einzelner Treffer mitten in Apples eigener Neuanordnungs-Animation eine
-	/// Zwischenposition als final durchgewunken — die Leiste sortierte sich danach nochmal
-	/// um, das Item landete am Ende woanders, ohne dass hier ein Fehler geworfen wurde.
+	/// After the drop macOS rearranges the bar with an animation — item *and* separators are
+	/// still travelling while it does. A single comparison right after the mouseUp therefore
+	/// reliably catches an intermediate state (measured live: frames overlapped by 18 pt, the
+	/// separator width fluctuated between 38 and 41 pt). So keep checking until things snap
+	/// into place. Two consecutive hits are required rather than a single one: observed live,
+	/// a single hit in the middle of Apple's own rearranging animation waved an intermediate
+	/// position through as final — the bar then rearranged once more and the item ended up
+	/// somewhere else, without an error being thrown here.
 	private func waitUntilPositioned(
 		_ item: MenuBarItem, in section: MenuBarLayout.Section
 	) async -> Bool {
 		var consecutiveHits = 0
 		for attempt in 0..<40 {
 			if attempt > 0 { try? await Task.sleep(for: .milliseconds(25)) }
-			// Dieselbe Messung, mit der auch der Controller den Ist-Zustand liest — was hier
-			// als erledigt durchgeht, kann dort nicht sofort wieder als falsch gelten.
+			// The same measurement the controller uses to read the actual state — what passes
+			// as done here cannot immediately count as wrong there.
 			if placement(of: item) == section {
 				consecutiveHits += 1
 				if consecutiveHits >= 2 { return true }
@@ -454,8 +454,8 @@ final class DragHideEngine {
 		return false
 	}
 
-	/// Posten eines mouseUp auf dem Item selbst, um einen eventuell hängenden Drag-Zustand
-	/// im Zielprozess aufzulösen.
+	/// Posts a mouseUp on the item itself, to resolve a drag state that may be hanging in the
+	/// target process.
 	private func releaseDrag(_ item: MenuBarItem) {
 		guard
 			let frame = CGSBridge.frame(for: item.windowID),
@@ -478,8 +478,8 @@ final class DragHideEngine {
 		return false
 	}
 
-	/// Ohne das hier verwirft das Fenstersystem die synthetischen Events als
-	/// "unterdrückt", solange kurz zuvor echte Eingaben stattfanden.
+	/// Without this the window system discards the synthetic events as "suppressed" whenever
+	/// real input happened shortly before.
 	private func permitAllEvents() {
 		guard let source = CGEventSource(stateID: .combinedSessionState) else { return }
 		for state in [
@@ -495,62 +495,62 @@ final class DragHideEngine {
 	}
 }
 
-// MARK: - Selbsttest
+// MARK: - Self-test
 
 extension DragHideEngine {
-	/// Legt die Trenner an (falls noch nicht geschehen) und prüft die eine Annahme, die sich
-	/// nicht aus dem Code ableiten lässt: dass macOS ein neues Status-Item *links* von den
-	/// bestehenden platziert. Stimmt das nicht, kehrt sich die Bedeutung beider Sektionen um.
+	/// Creates the separators (unless that already happened) and checks the one assumption that
+	/// cannot be derived from the code: that macOS places a new status item *left* of the
+	/// existing ones. If that does not hold, the meaning of both sections is inverted.
 	///
-	/// Aufrufbar über den Debug-Menüpunkt; live ist das sonst nicht nachvollziehbar, weil
-	/// beide Trenner im Normalzustand außerhalb des Bildschirms liegen.
+	/// Callable from the debug menu item; there is no other way to follow this live, because in
+	/// the normal state both separators sit off screen.
 	@discardableResult
 	func runSeparatorSelfTest() async -> Bool {
 		do {
-			// Wirft bereits bei vertauschter Reihenfolge (``DragError/separatorOrder``).
+			// Already throws on a swapped order (``DragError/separatorOrder``).
 			try await prepareSeparators()
 		} catch {
-			print("[BarT] Trenner-Selbsttest FEHLER: \(error.localizedDescription)")
+			print("[BarT] Separator self-test FAILED: \(error.localizedDescription)")
 			return false
 		}
 		guard
 			let hidden = hiddenSeparator?.frame,
 			let alwaysHidden = alwaysHiddenSeparator?.frame
 		else {
-			print("[BarT] Trenner-Selbsttest FEHLER: kein Rahmen ermittelbar")
+			print("[BarT] Separator self-test FAILED: no frame available")
 			return false
 		}
 		print(
 			String(
-				format: "[BarT]   hidden-Trenner        x=%9.1f…%9.1f",
+				format: "[BarT]   hidden separator        x=%9.1f…%9.1f",
 				hidden.minX, hidden.maxX
 			)
 		)
 		print(
 			String(
-				format: "[BarT]   alwaysHidden-Trenner  x=%9.1f…%9.1f",
+				format: "[BarT]   alwaysHidden separator  x=%9.1f…%9.1f",
 				alwaysHidden.minX, alwaysHidden.maxX
 			)
 		)
-		print("[BarT] Trenner-Selbsttest: Reihenfolge stimmt (alwaysHidden liegt links)")
+		print("[BarT] Separator self-test: order is correct (alwaysHidden sits on the left)")
 		return true
 	}
 }
 
-// MARK: - CGEvent-Konstruktion
+// MARK: - CGEvent construction
 
 private extension CGEventField {
-	/// Undokumentiertes Feld für die Fenster-ID eines Events. Rohwert übernommen aus Ice
-	/// (MIT), Ice/MenuBar/MenuBarItems/MenuBarItemManager.swift @ 11edd39115f3.
+	/// Undocumented field for an event's window ID. Raw value taken from Ice (MIT),
+	/// Ice/MenuBar/MenuBarItems/MenuBarItemManager.swift @ 11edd39115f3.
 	static let windowID = CGEventField(rawValue: 0x33)!
 }
 
 private extension CGEvent {
-	/// Erzeugt ein Maus-Event, das ein bestimmtes Menüleisten-Item adressiert.
+	/// Creates a mouse event addressing one particular menu bar item.
 	///
-	/// Entscheidend sind die drei windowID-Felder: sie sagen dem Zielprozess, welches
-	/// seiner Status-Item-Fenster gemeint ist — unabhängig davon, wo der Zeiger steht.
-	/// Feldauswahl übernommen aus Ice (MIT), `CGEvent.menuBarItemEvent`.
+	/// The three windowID fields are what matters: they tell the target process which of its
+	/// status item windows is meant — regardless of where the pointer sits. Field selection
+	/// taken from Ice (MIT), `CGEvent.menuBarItemEvent`.
 	static func menuBarItemEvent(
 		type: CGEventType,
 		flags: CGEventFlags,
