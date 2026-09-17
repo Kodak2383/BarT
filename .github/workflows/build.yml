@@ -1,0 +1,31 @@
+name: Build
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  build:
+    runs-on: macos-15
+    # Hinweis: macos-26 ist evtl. noch nicht auf GitHub Actions verfügbar
+    # Falls dieser Job fehlschlägt, auf macos-15 oder macos-latest zurückgreifen
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install xcodegen
+      run: |
+        brew install xcodegen
+
+    - name: Generate Xcode project
+      run: xcodegen generate
+
+    - name: Build
+      run: |
+        xcodebuild build \
+          -project "Bar Tool.xcodeproj" \
+          -scheme "Bar Tool" \
+          -configuration Debug \
+          -destination "platform=macOS"

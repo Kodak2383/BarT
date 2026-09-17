@@ -1,0 +1,26 @@
+name: Bar Tool
+bundleIdPrefix: de.andreduhme
+
+settings:
+  SWIFT_VERSION: "6.0"
+  CODE_SIGN_STYLE: Automatic
+  MACOSX_DEPLOYMENT_TARGET: "26.0"
+
+targets:
+  BarTool:
+    type: application
+    platform: macOS
+    deploymentTarget: "26.0"
+    sources:
+      - BarTool
+    info:
+      path: BarTool/Info.plist
+      properties:
+        LSUIElement: true
+        CFBundleShortVersionString: "0.1.0"
+        CFBundleVersion: "1"
+        NSAccessibilityUsageDescription: "Bar Tool benötigt Bedienungshilfen-Zugriff, um Menüleisten-Icons anderer Apps zu erkennen und zu steuern."
+    entitlements:
+      path: BarTool/BarTool.entitlements
+      properties:
+        com.apple.security.app-sandbox: false

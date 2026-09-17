@@ -1,0 +1,22 @@
+# Xcode
+.build/
+*.xcodeproj/
+DerivedData/
+*.pbxuser
+*.perspective
+*.perspectivev3
+*.xcworkspace/
+xcuserdata/
+.DS_Store
+*.swiftpm
+
+# Swift
+.swiftpm/
+.build/
+
+# IDE
+.vscode/
+*.swp
+*.swo
+*~
+.idea/
