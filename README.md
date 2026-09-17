@@ -1,8 +1,8 @@
 # BarT
 
-A Bartender clone for macOS — a menu bar management app. Items can be hidden, revealed again temporarily by clicking BarT's own icon, and the assignment survives a restart.
+A Bartender clone for macOS — a menu bar management app. Items you rarely need sit out of sight and come back for a moment when you click BarT's own icon.
 
-Tested on macOS 26. The engine relies on private CGS calls and simulated Cmd-drags (see `DragHideEngine`), so it is tied to the behaviour of that OS version.
+Tested on macOS 26. Finding the menu bar's windows relies on private CGS calls, so BarT is tied to the behaviour of that OS version.
 
 ## Requirements
 
@@ -32,44 +32,56 @@ In Xcode: `Product` → `Build`, or `Cmd+B`.
 
 ## Security & sandboxing
 
-`BarT.entitlements` disables the App Sandbox (`com.apple.security.app-sandbox = false`). That is necessary because BarT has to drive other applications' processes through the Accessibility API — something the macOS App Sandbox does not permit.
+`BarT.entitlements` disables the App Sandbox (`com.apple.security.app-sandbox = false`). A sandboxed app cannot read the menu bar's window list through the private CGS calls BarT is built on.
 
 ## Usage
 
 - **Left click** on the BarT icon temporarily reveals the hidden items; another click hides them again. Items in “Always hidden” stay away — that is exactly what the section is for.
 - **⌥-click** additionally reveals “Always hidden”.
 - **⌃⌥⌘B** does the same as a left click, system-wide.
-- A click anywhere outside the menu bar collapses it again. Clicks *inside* the menu bar do not — otherwise the item you just clicked would be pulled out from under the cursor.
-- **Right click** opens the menu (about, settings, quit). Holding **⌥** while the menu opens reveals the debug tools.
-- Under **Items** in the settings, every menu bar item is assigned one of the three sections, grouped by where it currently sits. The assignment is stored in `UserDefaults` and restored at launch.
+- A click anywhere outside the menu bar collapses it again. Clicks *inside* the menu bar do not — otherwise the item you just clicked would be pulled out from under the cursor. Without any interaction it collapses by itself after 15 seconds.
+- **Right click** opens the menu (about, the welcome window, settings, quit). Holding **⌥** while the menu opens reveals the debug tools.
 
-Items are named from the accessibility hierarchy where the owning app supplies something — “Bluetooth”, “Stats – CPU: Mini” — and Apple's menu extras additionally carry a stable identifier (`com.apple.menuextra.wifi`), which is what the assignment is stored under. Third-party items fall back to a positional key, so rearranging identically named items of the same app can still shift their assignment.
+## Arranging items: ⌘-drag
 
-To make that work, the bar is internally split into three areas, separated by two status items of BarT's own (invisible under normal circumstances):
+**BarT never moves an item.** Deciding what is hidden is a gesture macOS has always offered and almost nobody knows:
+
+> Hold **⌘** and drag an item along the menu bar.
+
+What you drag it *past* is the point. BarT splits the bar into three areas with two status items of its own, which show up as small `‹` markers — the separators:
 
 ```
-[ Visible ] [hidden separator] [ Hidden ] [alwaysHidden separator] [ Always hidden ]
+[ Always hidden ]  ‹  [ Hidden ]  ‹  [ Visible ]  «BarT»
 ```
 
-Moving other apps' items requires the **Accessibility** permission; without it the owner lookup is wrong as well (every item ends up attributed to Control Center). It can be granted from the settings under “General”.
+- Drag an item **left** past the first `‹` and it is hidden; past the second one as well and it stays away even when you reveal.
+- Drag it **right** again to bring it back.
+- The separators are only on screen **while the hidden items are revealed** — click BarT's icon first, then ⌘-drag. A plain click brings out the first `‹`; ⌥-click brings out the second one as well.
+- macOS remembers the arrangement itself. BarT stores nothing: the **Items** tab in the settings shows where things currently sit, as the items' real icons, and cannot change any of it.
+
+Items macOS pins itself — the clock, Control Center — cannot be dragged at all. That is a macOS rule, not a BarT limitation.
+
+## Permissions
+
+BarT needs **no accessibility permission**. The one permission it asks for is **screen recording**, and only to read the icons and titles of your menu bar items for the Items tab — macOS hands out neither without it. BarT makes no network requests and records nothing.
+
+It is asked for the first time you open the Items tab, never at launch. Because BarT is unsigned, macOS ties the grant to that exact build: **after every update you have to allow it again.**
 
 ## Current status
 
 Working:
 
-- Enumeration of all menu bar items including the real owning app (CGS window list + `kAXExtrasMenuBarAttribute`)
-- All three sections, filled via a simulated Cmd-drag next to the matching separator
-- Persistent layout, revealing by click, ⌥-click and global hotkey, collapsing by clicking beside it
-- Oscillation brake: two physically adjacent items cannot be positioned independently — a drag only guarantees the position of the dragged item, and its neighbour slides along. Rather than correcting forever, the app gives up after three attempts and reports it in the settings
+- Enumeration of every menu bar item through the CGS window list
+- All three sections, and the items' real icons in the settings, captured with ScreenCaptureKit
+- Revealing by click, ⌥-click and global hotkey; collapsing beside the bar or after 15 seconds
+- Launch at login
 
 Still open:
 
-- The hotkey is hard-wired (⌃⌥⌘B); on a collision the settings say so, but it cannot be changed
-- No collapse on a timer, only by clicking beside it
-- Items macOS pins itself (clock, Control Center) cannot be moved
-- “Launch at login” is wired up but untested. It could not have worked before the bundle ID was fixed, since `SMAppService` had nothing to tie the app to
+- The hotkey is hard-wired (⌃⌥⌘B); on a collision the settings say so, but it cannot be changed yet
+- Main screen only
 
-Behind the ⌥-only debug menu item “Run self-tests” sit the self-tests of `MenuBarLayout` and `OscillationGuard`, plus two checks that are only possible on a running system: the separator order (macOS has to place a new status item to the left of the existing ones — the entire section assignment rests on that) and the hotkey registration. All of them also run without the menu:
+Behind the ⌥-only debug menu item “Run self-tests” sit the checks that are only possible on a running system: the separator order (macOS has to place a new status item to the left of the existing ones — the entire section assignment rests on that), the display-name cleanup, the icon capture, and the hotkey registration. All of them also run without the menu:
 
 ```bash
 BART_SELF_TEST=1 "$(ls -d ~/Library/Developer/Xcode/DerivedData/BarT-*/Build/Products/Debug/BarT.app)/Contents/MacOS/BarT"

@@ -16,14 +16,12 @@ it four issues. BarT ships free; the price question waits for the assertion engi
 ### Ready — unblocked, startable now
 | ID | Title | Mode |
 | --- | --- | --- |
-| [BT-04](issues/BT-04.md) | Welcome window on first launch | 👤 HITL |
-| [BT-16](issues/BT-16.md) | Teach the ⌘-drag | 👤 HITL |
 | [BT-11](issues/BT-11.md) | Configurable shortcut | 👤 HITL |
+| [BT-02](issues/BT-02.md) | README for a public audience | 🤖 AFK |
 
 ### Blocked
 | ID | Title | Mode | Waiting for |
 | --- | --- | --- | --- |
-| [BT-02](issues/BT-02.md) | README for a public audience | 🤖 AFK | BT-16 |
 | [BT-14](issues/BT-14.md) | Publish 1.0 | 👤 HITL | everything |
 
 ### Done
@@ -35,6 +33,8 @@ it four issues. BarT ships free; the price question waits for the assertion engi
 | [BT-03](issues/BT-03.md) | Screen recording: ask at the right moment | Granted and revoked live: banner, General state and the item names follow on activation, no reopening |
 | [BT-06](issues/BT-06.md) | Tracer bullet: real icons | Confirmed live: every item in the list carries its own icon, 1.25 s per pass, 0 % CPU while the window sits open |
 | [BT-07](issues/BT-07.md) | The section grid, read-only | Three grids on the live bar at the window minimum; twenty-one AXImage elements read back with their names |
+| [BT-04](issues/BT-04.md) | Welcome window on first launch | Deleted the defaults domain: the window comes on the next launch, not the one after, and the menu brings it back |
+| [BT-16](issues/BT-16.md) | Teach the ⌘-drag | Read back by the maintainer; the first real ⌘-drag landed the item in Hidden, icon and all |
 
 ### Dropped
 | ID | Title | Why |
@@ -50,8 +50,8 @@ it four issues. BarT ships free; the price question waits for the assertion engi
 ```mermaid
 graph LR
   BT15[BT-15 Remove drag engine ✅] --> BT03[BT-03 Screen recording ✅]
-  BT15 --> BT04[BT-04 Welcome]
-  BT15 --> BT16[BT-16 Teach ⌘-drag]
+  BT15 --> BT04[BT-04 Welcome ✅]
+  BT15 --> BT16[BT-16 Teach ⌘-drag ✅]
   BT04 --> BT16
   BT03 --> BT06[BT-06 Icons tracer ✅]
   BT15 --> BT06
@@ -84,13 +84,14 @@ unknown (a new permission, an unproven API, unknown cost) first rather than last
 
 ## Parallelism
 
-What is left of BarT is a welcome window, an explanation and a keyboard shortcut — [BT-04](issues/BT-04.md),
-[BT-16](issues/BT-16.md), [BT-11](issues/BT-11.md), every one of them 👤 HITL. Nothing blocks
-anything else among them; only a person can judge whether an explanation lands or a shortcut feels
-right, so they go in whatever order suits the time available. After them the README
-([BT-02](issues/BT-02.md)) has everything it needs to describe.
+Two issues are left before publishing: [BT-11](issues/BT-11.md) (the shortcut is still hard-wired,
+👤 HITL) and [BT-02](issues/BT-02.md) (the README, 🤖 AFK). They do not touch each other. After
+them only [BT-14](issues/BT-14.md) remains, and that one needs a person for every step anyway.
 
-The items view is finished: [BT-06](issues/BT-06.md) proved the capture path and measured it,
-[BT-07](issues/BT-07.md) turned it into the three grids the PRD asks for. What BT-03 measured as a
-ceiling — nine of twenty-one items with no window title at all — is no longer a problem anyone
-sees, because nobody reads the names any more.
+BT-16 corrected the README's worst falsehoods on the way through — simulated ⌘-drags, an
+accessibility permission, an assignment in `UserDefaults`, all gone since BT-15. What BT-02 still
+owns is the structure and the stranger's path from "downloaded a zip" to "working app".
+
+One question BT-14 has to answer and nobody has: the licence sections still credit Ice for a drag
+technique BT-15 deleted. Whether BarT is still a derivative work decides whether it stays GPL-3.0
+(PRD §7).

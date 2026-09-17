@@ -5,6 +5,11 @@ import SwiftUI
 final class AppDelegate: NSObject, NSApplicationDelegate {
 	var statusItem: NSStatusItem?
 	var settingsWindow: NSWindow?
+	var welcomeWindow: NSWindow?
+
+	/// Set the first time the welcome window is shown. Deleting the defaults domain
+	/// (`defaults delete de.andreduhme.BarT`) is what makes a first launch happen again.
+	private static let hasSeenWelcomeKey = "hasSeenWelcome"
 
 	/// Attached to the status item for the duration of a right-click only — see
 	/// ``statusItemClicked()``.
@@ -59,6 +64,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 		menu.delegate = self
 
 		menu.addItem(NSMenuItem(title: "About BarT", action: #selector(showAbout), keyEquivalent: ""))
+		menu.addItem(
+			NSMenuItem(title: "Welcome to BarT", action: #selector(showWelcome), keyEquivalent: "")
+		)
 		menu.addItem(NSMenuItem(title: "Settings…", action: #selector(openSettings), keyEquivalent: ","))
 
 		// Debug tools. Purely read-only or purely computational, and hidden unless ⌥ is held —
@@ -83,6 +91,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 		menu.addItem(NSMenuItem(title: "Quit", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
 
 		statusMenu = menu
+
+		// Last, so the window lands on top of a menu bar that is already in place — and after
+		// the status item exists, because it is the thing the text points at.
+		if !UserDefaults.standard.bool(forKey: Self.hasSeenWelcomeKey) {
+			showWelcome()
+		}
 
 		menuBarController.onRevealChanged = { [weak self] isRevealed in
 			self?.updateStatusItemSymbol(isRevealed: isRevealed)
@@ -144,6 +158,28 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 			systemSymbolName: isRevealed ? Self.revealedSymbol : Self.collapsedSymbol,
 			accessibilityDescription: "BarT"
 		) ?? button.image
+	}
+
+	/// The first-launch window, and the menu entry that brings it back.
+	@objc
+	func showWelcome() {
+		UserDefaults.standard.set(true, forKey: Self.hasSeenWelcomeKey)
+		if let welcomeWindow, welcomeWindow.isVisible {
+			welcomeWindow.makeKeyAndOrderFront(nil)
+			NSApplication.shared.activate(ignoringOtherApps: true)
+			return
+		}
+		let view = WelcomeView { [weak self] in self?.welcomeWindow?.close() }
+		let window = NSWindow(contentViewController: NSHostingController(rootView: view))
+		window.title = "Welcome to BarT"
+		// Not resizable: the text is laid out for one width, and there is nothing in here that
+		// gets better with more room.
+		window.styleMask = [.titled, .closable]
+		window.isReleasedWhenClosed = false
+		window.center()
+		welcomeWindow = window
+		window.makeKeyAndOrderFront(nil)
+		NSApplication.shared.activate(ignoringOtherApps: true)
 	}
 
 	/// The standard panel already reads name, version and icon from the bundle — there is

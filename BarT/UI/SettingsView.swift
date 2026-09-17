@@ -174,6 +174,16 @@ private struct ItemsSettingsTab: View {
 				// hence no picker, no menu and no drop target anywhere below.
 				ScrollView {
 					VStack(alignment: .leading, spacing: 18) {
+						Label(
+							// Measured on the live bar: a plain reveal expands only the first
+							// separator, so the second ‹ is not on screen until ⌥-click.
+							"The ‹ separators only appear while the hidden items are revealed — "
+								+ "click BarT's icon first, ⌥-click to bring out the second "
+								+ "separator too, then ⌘-drag.",
+							systemImage: "hand.draw"
+						)
+						.font(.callout)
+						.foregroundStyle(.secondary)
 						ForEach(MenuBarSection.allCases, id: \.self) { section in
 							grid(for: section)
 						}
@@ -283,11 +293,18 @@ private struct ItemsSettingsTab: View {
 		}
 	}
 
+	/// Says how the section is reached *and* how an item gets into it — the gesture belongs
+	/// next to the thing it changes, not in a help page (BT-16). Every sentence names the ‹
+	/// separator, because that is what the user is aiming at and they have never seen one.
 	private static func explanation(of section: MenuBarSection) -> String {
 		switch section {
-		case .visible: "Always in the menu bar."
-		case .hidden: "Revealed by clicking the BarT icon or pressing \(GlobalHotKey.displayName)."
-		case .alwaysHidden: "Only revealed on ⌥-click."
+		case .visible:
+			"Always in the menu bar. ⌘-drag an item right past both ‹ separators to bring it back here."
+		case .hidden:
+			"Revealed by clicking the BarT icon or pressing \(GlobalHotKey.displayName). "
+				+ "⌘-drag an item left past the first ‹ separator to move it here."
+		case .alwaysHidden:
+			"Only revealed on ⌥-click. ⌘-drag an item left past both ‹ separators to move it here."
 		}
 	}
 
