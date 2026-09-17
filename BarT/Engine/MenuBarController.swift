@@ -42,7 +42,7 @@ final class MenuBarController {
 	/// Bremse gegen endloses Hin- und Herziehen zweier Nachbarn (siehe ``OscillationGuard``).
 	private var oscillation = OscillationGuard()
 
-	/// Bar Tools eigene Menüleisten-Fenster (Icon, beide Trenner) — dürfen nie als verwaltbares
+	/// BarTs eigene Menüleisten-Fenster (Icon, beide Trenner) — dürfen nie als verwaltbares
 	/// Item auftauchen. Die Trenner kommen aus der Engine, das Status-Icon meldet sich per
 	/// ``excludeOwnWindow(_:)`` von außen (siehe AppDelegate).
 	private var excludedWindowIDs: Set<CGWindowID> = []
@@ -84,7 +84,7 @@ final class MenuBarController {
 	}
 
 	/// Blendet die `hidden`-Sektion vorübergehend ein bzw. wieder aus — die Geste, mit der man
-	/// überhaupt an ein verstecktes Item herankommt (Klick auf Bar Tools Status-Item).
+	/// überhaupt an ein verstecktes Item herankommt (Klick auf BarTs Status-Item).
 	/// `alwaysHidden` bleibt bewusst weg; genau dafür gibt es die Sektion.
 	///
 	/// ponytail: kein Zuklappen nach Zeit — nur der Klick daneben (siehe
@@ -164,7 +164,7 @@ final class MenuBarController {
 	func runStartupSelfTest() async {
 		await engine.runSeparatorSelfTest()
 		print(
-			"[BarTool] Hotkey \(GlobalHotKey.displayName): "
+			"[BarT] Hotkey \(GlobalHotKey.displayName): "
 				+ (isHotKeyRegistered ? "registriert" : "FEHLER — bereits belegt")
 		)
 	}
@@ -373,10 +373,10 @@ extension OscillationGuard {
 		check(pingPong.isStuck("ram"), "release() wirkt nur auf den genannten Schlüssel")
 
 		if failures.isEmpty {
-			print("[BarTool] OscillationGuard-Selbsttest: alle Prüfungen bestanden")
+			print("[BarT] OscillationGuard-Selbsttest: alle Prüfungen bestanden")
 		} else {
 			for failure in failures {
-				print("[BarTool] OscillationGuard-Selbsttest FEHLER: \(failure)")
+				print("[BarT] OscillationGuard-Selbsttest FEHLER: \(failure)")
 			}
 		}
 		assert(failures.isEmpty, "OscillationGuard-Selbsttest fehlgeschlagen")

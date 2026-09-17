@@ -1,7 +1,7 @@
 import SwiftUI
 
 @main
-struct BarToolApp: App {
+struct BarTApp: App {
 	@NSApplicationDelegateAdaptor(AppDelegate.self) var delegate
 
 	var body: some Scene {

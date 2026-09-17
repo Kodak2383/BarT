@@ -1,4 +1,4 @@
-# Bar Tool
+# BarT
 
 Ein Bartender-Klon für macOS — Menüleisten-Verwaltungsapp. Items lassen sich verstecken, per Klick aufs eigene Icon vorübergehend wieder einblenden, und die Zuordnung überlebt den Neustart.
 
@@ -24,16 +24,15 @@ Zusätzlich benötigt:
 ## Bauen
 
 ```bash
-cd "Bar Tool"
 xcodegen generate
-open "Bar Tool.xcodeproj"
+open BarT.xcodeproj
 ```
 
 Im Xcode-Editor: `Product` → `Build` oder `Cmd+B`.
 
 ## Sicherheit & Sandboxing
 
-`BarTool.entitlements` deaktiviert die App Sandbox (`com.apple.security.app-sandbox = false`). Das ist notwendig, weil Bar Tool fremde Anwendungsprozesse über die Accessibility API steuern muss — eine Fähigkeit, die die macOS App Sandbox nicht erlaubt.
+`BarT.entitlements` deaktiviert die App Sandbox (`com.apple.security.app-sandbox = false`). Das ist notwendig, weil BarT fremde Anwendungsprozesse über die Accessibility API steuern muss — eine Fähigkeit, die die macOS App Sandbox nicht erlaubt.
 
 ## Bedienung
 
@@ -70,7 +69,7 @@ Noch offen:
 Hinter dem Debug-Menüpunkt „Layout-Selbsttest" liegen die Selbsttests von `MenuBarLayout` und `OscillationGuard` sowie zwei Prüfungen, die nur am laufenden System möglich sind: die Trenner-Reihenfolge (macOS muss ein neues Status-Item links von den bestehenden platzieren — darauf beruht die gesamte Sektionszuordnung) und die Hotkey-Registrierung. Beides geht auch ohne Menü:
 
 ```bash
-BARTOOL_SELF_TEST=1 "$(ls -d ~/Library/Developer/Xcode/DerivedData/Bar_Tool-*/Build/Products/Debug/BarTool.app)/Contents/MacOS/BarTool"
+BART_SELF_TEST=1 "$(ls -d ~/Library/Developer/Xcode/DerivedData/BarT-*/Build/Products/Debug/BarT.app)/Contents/MacOS/BarT"
 ```
 
 ## Dank

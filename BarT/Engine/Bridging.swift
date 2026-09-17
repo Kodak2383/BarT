@@ -63,7 +63,7 @@ func CGSGetScreenRectForWindow(
 // Symbol existiert aber weiterhin. Eigener Swift-Name, damit es nicht mit dem
 // unbenutzbaren Import kollidiert. Shim-Idee aus Ice, Ice/Bridging/Shims/Deprecated.swift.
 @_silgen_name("GetProcessForPID")
-func barToolGetProcessForPID(
+func shimGetProcessForPID(
 	_ pid: pid_t,
 	_ psn: inout ProcessSerialNumber
 ) -> OSStatus
@@ -76,7 +76,7 @@ func CGSEventIsAppUnresponsive(
 
 // MARK: - Swift-Fassade
 
-private let log = Logger(subsystem: "de.andreduhme.BarTool", category: "CGSBridge")
+private let log = Logger(subsystem: "de.andreduhme.BarT", category: "CGSBridge")
 
 enum CGSBridge {
 	/// Fenster-IDs aller Menüleisten-Items *aller* laufenden Prozesse.
@@ -108,7 +108,7 @@ enum CGSBridge {
 	/// und lässt den Drag-Zustand hängen. Vor jedem Drag prüfen.
 	static func isUnresponsive(pid: pid_t) -> Bool {
 		var psn = ProcessSerialNumber()
-		guard barToolGetProcessForPID(pid, &psn) == noErr else { return false }
+		guard shimGetProcessForPID(pid, &psn) == noErr else { return false }
 		return CGSEventIsAppUnresponsive(CGSMainConnectionID(), &psn)
 	}
 

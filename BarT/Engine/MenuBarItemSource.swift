@@ -9,7 +9,7 @@ import CoreGraphics
 final class MenuBarItemSource: NSObject {
 	private(set) var items: [MenuBarItem] = []
 
-	/// Liefert die Fenster-IDs, die nie als Item auftauchen sollen — Bar Tools eigene
+	/// Liefert die Fenster-IDs, die nie als Item auftauchen sollen — BarTs eigene
 	/// Status-Items (Icon, Trenner). Über die WindowID statt PID/BundleID, weil letztere
 	/// direkt nach einem Drag kurzzeitig falsch zugeordnet werden (siehe ``MenuBarController``).
 	///
@@ -96,7 +96,7 @@ final class MenuBarItemSource: NSObject {
 
 	/// Liefert alle Menüleisten-Items, sortiert von links nach rechts.
 	/// - Parameter excludedWindowIDs: Fenster, die nie als Item zurückkommen sollen
-	///   (Bar Tools eigene Status-Items).
+	///   (BarTs eigene Status-Items).
 	static func enumerate(excluding excludedWindowIDs: Set<CGWindowID> = []) -> [MenuBarItem] {
 		let windowIDs = Set(CGSBridge.menuBarWindowIDs(onScreenOnly: false))
 		guard !windowIDs.isEmpty else { return [] }
@@ -285,20 +285,20 @@ final class MenuBarItemSource: NSObject {
 	static func debugDump() {
 		let items = enumerate()
 		let owners = Set(items.map(\.id.bundleID))
-		print("[BarTool] \(items.count) Menüleisten-Items aus \(owners.count) Apps (links → rechts):")
+		print("[BarT] \(items.count) Menüleisten-Items aus \(owners.count) Apps (links → rechts):")
 		if !AccessibilityPermission.isTrusted {
-			print("[BarTool]   Hinweis: keine Bedienungshilfen-Berechtigung — ohne sie fällt die")
-			print("[BarTool]   Besitzer-Ermittlung auf den Hosting-Prozess zurück und ist falsch.")
+			print("[BarT]   Hinweis: keine Bedienungshilfen-Berechtigung — ohne sie fällt die")
+			print("[BarT]   Besitzer-Ermittlung auf den Hosting-Prozess zurück und ist falsch.")
 		}
 		if items.contains(where: { $0.id.title.isEmpty }) {
-			print("[BarTool]   Hinweis: Items ohne Titel lassen sich nicht einzeln persistieren.")
+			print("[BarT]   Hinweis: Items ohne Titel lassen sich nicht einzeln persistieren.")
 		}
 		for item in items {
 			let flag = item.isOnScreen ? "sichtbar " : "versteckt"
 			let frame = String(
 				format: "x=%7.1f w=%5.1f", item.frame.minX, item.frame.width
 			)
-			print("[BarTool]   \(flag)  \(frame)  win=\(item.windowID) pid=\(item.ownerPID)  \(item.storageKey)")
+			print("[BarT]   \(flag)  \(frame)  win=\(item.windowID) pid=\(item.ownerPID)  \(item.storageKey)")
 		}
 	}
 }

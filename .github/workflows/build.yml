@@ -25,7 +25,7 @@ jobs:
     - name: Build
       run: |
         xcodebuild build \
-          -project "Bar Tool.xcodeproj" \
-          -scheme "Bar Tool" \
+          -project "BarT.xcodeproj" \
+          -scheme "BarT" \
           -configuration Debug \
           -destination "platform=macOS"

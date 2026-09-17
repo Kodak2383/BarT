@@ -96,7 +96,7 @@ final class DragHideEngine {
 			)
 			item.button?.image = NSImage(
 				systemSymbolName: "chevron.compact.left",
-				accessibilityDescription: "Bar Tool Trenner"
+				accessibilityDescription: "BarT Trenner"
 			)
 			item.button?.image?.isTemplate = true
 		}
@@ -138,7 +138,7 @@ final class DragHideEngine {
 		}
 	}
 
-	private static let log = Logger(subsystem: "de.andreduhme.BarTool", category: "DragHideEngine")
+	private static let log = Logger(subsystem: "de.andreduhme.BarT", category: "DragHideEngine")
 
 	private static let maxAttempts = 3
 	/// Wie lange auf die Bestätigung am Session-Tap gewartet wird (Wert aus Ice).
@@ -510,29 +510,29 @@ extension DragHideEngine {
 			// Wirft bereits bei vertauschter Reihenfolge (``DragError/separatorOrder``).
 			try await prepareSeparators()
 		} catch {
-			print("[BarTool] Trenner-Selbsttest FEHLER: \(error.localizedDescription)")
+			print("[BarT] Trenner-Selbsttest FEHLER: \(error.localizedDescription)")
 			return false
 		}
 		guard
 			let hidden = hiddenSeparator?.frame,
 			let alwaysHidden = alwaysHiddenSeparator?.frame
 		else {
-			print("[BarTool] Trenner-Selbsttest FEHLER: kein Rahmen ermittelbar")
+			print("[BarT] Trenner-Selbsttest FEHLER: kein Rahmen ermittelbar")
 			return false
 		}
 		print(
 			String(
-				format: "[BarTool]   hidden-Trenner        x=%9.1f…%9.1f",
+				format: "[BarT]   hidden-Trenner        x=%9.1f…%9.1f",
 				hidden.minX, hidden.maxX
 			)
 		)
 		print(
 			String(
-				format: "[BarTool]   alwaysHidden-Trenner  x=%9.1f…%9.1f",
+				format: "[BarT]   alwaysHidden-Trenner  x=%9.1f…%9.1f",
 				alwaysHidden.minX, alwaysHidden.maxX
 			)
 		)
-		print("[BarTool] Trenner-Selbsttest: Reihenfolge stimmt (alwaysHidden liegt links)")
+		print("[BarT] Trenner-Selbsttest: Reihenfolge stimmt (alwaysHidden liegt links)")
 		return true
 	}
 }

@@ -15,13 +15,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 	func applicationDidFinishLaunching(_ notification: Notification) {
 		// Terminal-Zugriff auf die Debug-Ausgaben ohne Menü-Klick, nur wenn explizit gesetzt.
 		let environment = ProcessInfo.processInfo.environment
-		let wantsSelfTest = environment["BARTOOL_SELF_TEST"] != nil
-		if environment["BARTOOL_DEBUG_DUMP"] != nil || wantsSelfTest {
+		let wantsSelfTest = environment["BART_SELF_TEST"] != nil
+		if environment["BART_DEBUG_DUMP"] != nil || wantsSelfTest {
 			// Ungepuffert, sonst geht die Ausgabe verloren, wenn der Prozess (z.B. beim
 			// Debuggen über eine umgeleitete Log-Datei) hart beendet wird.
 			setvbuf(stdout, nil, _IONBF, 0)
 		}
-		if environment["BARTOOL_DEBUG_DUMP"] != nil {
+		if environment["BART_DEBUG_DUMP"] != nil {
 			MenuBarItemSource.debugDump()
 		}
 
@@ -35,7 +35,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 		statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
 
 		if let button = statusItem?.button {
-			button.image = NSImage(systemSymbolName: Self.collapsedSymbol, accessibilityDescription: "Bar Tool")
+			button.image = NSImage(systemSymbolName: Self.collapsedSymbol, accessibilityDescription: "BarT")
 			// Titel nur als Rückfall, falls das Symbol fehlt — sonst stünde das Kürzel aus
 			// Phase 0 dauerhaft neben dem Icon.
 			button.title = button.image == nil ? "BT" : ""
@@ -129,7 +129,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 		// Ohne Rückfall aufs alte Bild stünde die Menüleiste bei einem fehlenden Symbol leer da.
 		button.image = NSImage(
 			systemSymbolName: isRevealed ? Self.revealedSymbol : Self.collapsedSymbol,
-			accessibilityDescription: "Bar Tool"
+			accessibilityDescription: "BarT"
 		) ?? button.image
 	}
 
@@ -159,7 +159,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 		let hostingController = NSHostingController(rootView: settingsView)
 
 		let window = NSWindow(contentViewController: hostingController)
-		window.title = "Bar Tool Einstellungen"
+		window.title = "BarT Einstellungen"
 		window.setFrame(NSRect(x: 0, y: 0, width: 480, height: 360), display: false)
 		window.center()
 		window.styleMask = [.titled, .closable, .miniaturizable]

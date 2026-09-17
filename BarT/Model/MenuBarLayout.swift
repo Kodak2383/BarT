@@ -116,10 +116,10 @@ extension MenuBarLayout {
 		}
 
 		if failures.isEmpty {
-			print("[BarTool] MenuBarLayout-Selbsttest: alle Prüfungen bestanden")
+			print("[BarT] MenuBarLayout-Selbsttest: alle Prüfungen bestanden")
 		} else {
 			for failure in failures {
-				print("[BarTool] MenuBarLayout-Selbsttest FEHLER: \(failure)")
+				print("[BarT] MenuBarLayout-Selbsttest FEHLER: \(failure)")
 			}
 		}
 		assert(failures.isEmpty, "MenuBarLayout-Selbsttest fehlgeschlagen")

@@ -32,12 +32,12 @@ final class EventTap {
 		case .pid(let pid):
 			CGEvent.tapCreateForPid(
 				pid: pid, place: .tailAppendEventTap, options: options,
-				eventsOfInterest: mask, callback: barToolEventTapCallback, userInfo: userInfo
+				eventsOfInterest: mask, callback: eventTapCallback, userInfo: userInfo
 			)
 		case .sessionEventTap:
 			CGEvent.tapCreate(
 				tap: .cgSessionEventTap, place: .tailAppendEventTap, options: options,
-				eventsOfInterest: mask, callback: barToolEventTapCallback, userInfo: userInfo
+				eventsOfInterest: mask, callback: eventTapCallback, userInfo: userInfo
 			)
 		}
 
@@ -83,7 +83,7 @@ final class EventTap {
 
 /// C-Callback des Taps. Die Run-Loop-Source hängt am Main-Run-Loop, der Callback läuft
 /// also auf dem Main-Thread — `assumeIsolated` ist hier korrekt und nicht geraten.
-private func barToolEventTapCallback(
+private func eventTapCallback(
 	proxy: CGEventTapProxy,
 	type: CGEventType,
 	event: CGEvent,
