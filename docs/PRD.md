@@ -23,10 +23,15 @@ stay put, the rest is one click away. Not an empty bar, and not just two offende
 | Two OS versions | Eventually **one** app choosing its engine at runtime, not two builds | R3-Q5 |
 | Signing | Unsigned, not notarized; README documents the Gatekeeper path | R2-Q3 |
 | Updates | GitHub Releases, manual download, no Sparkle | R2-Q4 |
-| Licence | BarT under MIT; Ice's MIT notice shipped alongside | R2-Q2 |
+| Licence | **GPL-3.0** — inherited from Ice, which is GPL-3, not MIT as assumed in R2-Q2 | R2-Q2, corrected 2026-09-17 |
 | Telemetry | None. The app makes no network requests at all | set here |
 
 The Mac App Store is out of the question — BarT uses private CGS APIs.
+
+**On the licence:** the session assumed Ice was MIT-licensed, as did six source comments and the
+README. It is GPL-3, at the referenced commit as well. Since BarT takes code from it (`scromble`,
+the tap construction, the CGS signatures), BarT is a derivative work and ships under GPL-3 too.
+This costs the project nothing it needs — the source goes public regardless.
 
 **Consequence of shipping unsigned:** macOS ties accessibility and screen recording permissions
 to the code signature. Without a stable Developer ID, every update invalidates them and the user

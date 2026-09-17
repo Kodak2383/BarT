@@ -5,7 +5,7 @@ import OSLog
 
 // Private CoreGraphics Services API (CGS).
 //
-// Provenance: signatures verified one to one against the open source project "Ice" (MIT),
+// Provenance: signatures verified one to one against the open source project "Ice" (GPL-3.0),
 // file Ice/Bridging/Shims/Private.swift, commit 11edd39115f3f43a83ae114b5348df6a0e1741cf
 // (https://github.com/jordanbaird/Ice). Not guessed — wrong signatures cause silent memory
 // corruption here, not compiler errors.

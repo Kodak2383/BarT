@@ -17,15 +17,10 @@ to be handed to a fresh session on its own.
 | [BT-03](issues/BT-03.md) | Accessibility permission: honest state, honest UI | 👤 HITL |
 | [BT-11](issues/BT-11.md) | Configurable shortcut | 👤 HITL |
 
-### Blocked on a decision
-| ID | Title | Waiting for |
-| --- | --- | --- |
-| [BT-01](issues/BT-01.md) | Ship the licences | **Ice is GPL-3, not MIT.** Which licence BarT ships under is open — see below |
-
 ### Blocked
 | ID | Title | Mode | Waiting for |
 | --- | --- | --- | --- |
-| [BT-02](issues/BT-02.md) | README for a public audience | 🤖 AFK | BT-01 |
+| [BT-02](issues/BT-02.md) | README for a public audience | 🤖 AFK | BT-01 ✅, **BT-09** |
 | [BT-04](issues/BT-04.md) | Welcome window on first launch | 👤 HITL | BT-03 |
 | [BT-05](issues/BT-05.md) | Starting-point proposal | 👤 HITL | BT-04 |
 | [BT-06](issues/BT-06.md) | Tracer bullet: real icons in the existing list | 👤 HITL | BT-03 |
@@ -42,6 +37,7 @@ _(empty)_
 | ID | Title | Verified by |
 | --- | --- | --- |
 | [BT-12](issues/BT-12.md) | Auto-collapse after 15 seconds | Icon `»` → hotkey → `«` → 16 s → `»`, captured from the live menu bar |
+| [BT-01](issues/BT-01.md) | Ship the licences | grep proves no "MIT" claim is left; about-panel text still needs one human look |
 
 ### Dropped
 | ID | Title | Why |
@@ -52,7 +48,8 @@ _(empty)_
 
 ```mermaid
 graph LR
-  BT01[BT-01 Licences] --> BT02[BT-02 README]
+  BT01[BT-01 Licences ✅] --> BT02[BT-02 README]
+  BT09 --> BT02
   BT03[BT-03 Permission UX] --> BT04[BT-04 Welcome]
   BT04 --> BT05[BT-05 Proposal]
   BT03 --> BT06[BT-06 Icons tracer]
@@ -94,6 +91,9 @@ Two ordering rules that are not visible in the graph:
 
 ## Parallelism
 
-BT-12 is done and BT-13 turned out to be a non-issue. BT-01 is held up by a licence question that
-only you can answer. That leaves **BT-03 and BT-11**, both 👤 HITL — they need a window in which you
-can click a system dialog and press a few key combinations.
+BT-01 and BT-12 are done, BT-13 turned out to be a non-issue. BT-02 moved behind BT-09: a README
+that describes the finished app cannot be written while the items view is still the old list — the
+original dependency (BT-01 only) was wrong.
+
+That empties the AFK column. What is left to start is **BT-03 and BT-11**, both 👤 HITL: they need a
+window in which you can click a system dialog and press a few key combinations.

@@ -325,7 +325,7 @@ final class DragHideEngine {
 
 		// The start point deliberately sits far outside every screen: which item gets dragged
 		// is decided by the event's windowID fields, not by the cursor position. That way no
-		// other item ends up under the simulated pointer. (Technique from Ice, MIT.)
+		// other item ends up under the simulated pointer. (Technique from Ice, GPL-3.0.)
 		let startPoint = CGPoint(x: 20_000, y: 20_000)
 
 		guard
@@ -367,7 +367,7 @@ final class DragHideEngine {
 	/// The detour: post a null event to the target process and, in the tap belonging to it,
 	/// forward the real event to the *session* tap. Only once it has been observed there — so
 	/// once the system has seen it — does it go to the process via `postToPid`. Technique
-	/// ("scromble") taken one to one from Ice (MIT), `MenuBarItemManager.scrombleEvent`.
+	/// ("scromble") taken one to one from Ice (GPL-3.0), `MenuBarItemManager.scrombleEvent`.
 	private func scromble(_ event: CGEvent, pid: pid_t) async throws {
 		guard let nullEvent = CGEvent(source: nil) else { throw DragError.eventCreationFailed }
 		let nullUserData = Int64(truncatingIfNeeded: Int(bitPattern: ObjectIdentifier(nullEvent)))
@@ -540,7 +540,7 @@ extension DragHideEngine {
 // MARK: - CGEvent construction
 
 private extension CGEventField {
-	/// Undocumented field for an event's window ID. Raw value taken from Ice (MIT),
+	/// Undocumented field for an event's window ID. Raw value taken from Ice (GPL-3.0),
 	/// Ice/MenuBar/MenuBarItems/MenuBarItemManager.swift @ 11edd39115f3.
 	static let windowID = CGEventField(rawValue: 0x33)!
 }
@@ -550,7 +550,7 @@ private extension CGEvent {
 	///
 	/// The three windowID fields are what matters: they tell the target process which of its
 	/// status item windows is meant — regardless of where the pointer sits. Field selection
-	/// taken from Ice (MIT), `CGEvent.menuBarItemEvent`.
+	/// taken from Ice (GPL-3.0), `CGEvent.menuBarItemEvent`.
 	static func menuBarItemEvent(
 		type: CGEventType,
 		flags: CGEventFlags,

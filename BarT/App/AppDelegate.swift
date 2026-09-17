@@ -155,7 +155,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 	@objc
 	func showAbout() {
 		NSApplication.shared.activate(ignoringOtherApps: true)
-		NSApplication.shared.orderFrontStandardAboutPanel(nil)
+		// The GPL asks for the notice to travel with the *program*, not just with the repository —
+		// so it belongs in the panel rather than only in a file nobody who downloads a zip reads.
+		let credits = NSAttributedString(
+			string: """
+				BarT is free software under the GPL-3.0 licence.
+				It contains code from Ice (GPL-3.0) by Jordan Baird.
+				""",
+			attributes: [.font: NSFont.systemFont(ofSize: NSFont.smallSystemFontSize)]
+		)
+		NSApplication.shared.orderFrontStandardAboutPanel(options: [.credits: credits])
 	}
 
 	@objc

@@ -223,7 +223,7 @@ final class MenuBarItemSource: NSObject {
 	/// The only dependable source is the AX hierarchy: `kAXExtrasMenuBarAttribute` returns
 	/// only an app's own items. The match is made on the horizontal center — the AX frames are
 	/// inflated by 1 pt compared to the CGS frames, but the center matches exactly. (Same
-	/// approach as in "Ice", MIT, github.com/jordanbaird/Ice.)
+	/// approach as in "Ice", GPL-3.0, github.com/jordanbaird/Ice.)
 	private static func accessibilityOwners() -> [ItemOwner] {
 		guard AccessibilityPermission.isTrusted else { return [] }
 

@@ -75,6 +75,12 @@ Behind the ⌥-only debug menu item “Run self-tests” sit the self-tests of `
 BART_SELF_TEST=1 "$(ls -d ~/Library/Developer/Xcode/DerivedData/BarT-*/Build/Products/Debug/BarT.app)/Contents/MacOS/BarT"
 ```
 
-## Credits
+## Licence
 
-The drag technique (`scromble`, the windowID fields in `CGEvent`) comes from [Ice](https://github.com/jordanbaird/Ice) (MIT).
+BarT is free software under the **GPL-3.0** — see [LICENSE](LICENSE).
+Copyright © 2026 André Duhme.
+
+That is not a free choice: BarT contains code from [Ice](https://github.com/jordanbaird/Ice)
+(GPL-3.0) by Jordan Baird, which makes BarT a derivative work. Every location is listed in
+[THIRD-PARTY-LICENSES.md](THIRD-PARTY-LICENSES.md) and marked in the source. The drag technique
+itself (`scromble`, the windowID fields in `CGEvent`) is the most substantial part of it.

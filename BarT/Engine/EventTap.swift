@@ -4,7 +4,7 @@ import OSLog
 /// Minimal CGEvent tap — built out only as far as ``DragHideEngine`` needs it to deliver its
 /// drag events (see ``DragHideEngine/scromble(_:pid:)`` there).
 ///
-/// Tap construction taken from Ice (MIT), Ice/Events/EventTap.swift.
+/// Tap construction taken from Ice (GPL-3.0), Ice/Events/EventTap.swift.
 ///
 /// There is deliberately no `deinit`: under Swift 6 it would not be MainActor-isolated and
 /// could not reach the stored properties. Every tap therefore has to be torn down explicitly
