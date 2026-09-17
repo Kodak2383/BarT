@@ -202,6 +202,15 @@ private struct ItemsSettingsTab: View {
 			Self.didRequestThisLaunch = true
 			hasScreenRecording = ScreenRecordingPermission.request()
 		}
+		.task(id: iconPass) {
+			await controller.icons.load(for: controller.items)
+		}
+	}
+
+	/// What a capture pass depends on. Empty while the permission is missing, so granting it
+	/// starts a pass instead of leaving the list on the names it opened with.
+	private var iconPass: [CGWindowID] {
+		hasScreenRecording ? controller.items.map(\.windowID) : []
 	}
 
 	/// Items of one section, in the order they physically sit in the bar (left to right).
@@ -210,10 +219,34 @@ private struct ItemsSettingsTab: View {
 	}
 
 	private func row(for item: MenuBarItem) -> some View {
-		Text(item.displayName)
-			.lineLimit(1)
-			.truncationMode(.middle)
-			.padding(.vertical, 2)
+		HStack(spacing: 8) {
+			if hasScreenRecording {
+				// A fixed box whether or not the capture worked, so the names stay in one
+				// column. Wide enough for the items that are text rather than a glyph — a
+				// clock's window is about twice as wide as it is tall.
+				Group {
+					if let icon = controller.icons.icon(for: item.windowID) {
+						Image(nsImage: icon)
+							.resizable()
+							.aspectRatio(contentMode: .fit)
+					} else {
+						Image(systemName: "square.dashed")
+							.foregroundStyle(.tertiary)
+					}
+				}
+				.frame(width: 44, height: 18)
+				.padding(.horizontal, 3)
+				.padding(.vertical, 2)
+				.background(
+					RoundedRectangle(cornerRadius: 5)
+						.fill(Color(nsColor: controller.icons.menuBarTint ?? .windowBackgroundColor))
+				)
+			}
+			Text(item.displayName)
+				.lineLimit(1)
+				.truncationMode(.middle)
+		}
+		.padding(.vertical, 2)
 	}
 
 	private static func title(of section: MenuBarSection) -> String {

@@ -17,14 +17,13 @@ it four issues. BarT ships free; the price question waits for the assertion engi
 | ID | Title | Mode |
 | --- | --- | --- |
 | [BT-04](issues/BT-04.md) | Welcome window on first launch | 👤 HITL |
-| [BT-06](issues/BT-06.md) | Tracer bullet: real icons | 👤 HITL |
 | [BT-16](issues/BT-16.md) | Teach the ⌘-drag | 👤 HITL |
 | [BT-11](issues/BT-11.md) | Configurable shortcut | 👤 HITL |
+| [BT-07](issues/BT-07.md) | The section grid, read-only | 🤖 AFK |
 
 ### Blocked
 | ID | Title | Mode | Waiting for |
 | --- | --- | --- | --- |
-| [BT-07](issues/BT-07.md) | The section grid, read-only | 🤖 AFK | BT-06 |
 | [BT-02](issues/BT-02.md) | README for a public audience | 🤖 AFK | BT-07, BT-16 |
 | [BT-14](issues/BT-14.md) | Publish 1.0 | 👤 HITL | everything |
 
@@ -35,6 +34,7 @@ it four issues. BarT ships free; the price question waits for the assertion engi
 | [BT-01](issues/BT-01.md) | Ship the licences | grep proves no "MIT" claim is left; about-panel text still needs one human look |
 | [BT-15](issues/BT-15.md) | Remove the Ice-derived drag engine | ~1,000 lines gone, gates pass, reveal and auto-collapse unchanged on the live bar |
 | [BT-03](issues/BT-03.md) | Screen recording: ask at the right moment | Granted and revoked live: banner, General state and the item names follow on activation, no reopening |
+| [BT-06](issues/BT-06.md) | Tracer bullet: real icons | Confirmed live: every item in the list carries its own icon, 1.25 s per pass, 0 % CPU while the window sits open |
 
 ### Dropped
 | ID | Title | Why |
@@ -53,7 +53,7 @@ graph LR
   BT15 --> BT04[BT-04 Welcome]
   BT15 --> BT16[BT-16 Teach ⌘-drag]
   BT04 --> BT16
-  BT03 --> BT06[BT-06 Icons tracer]
+  BT03 --> BT06[BT-06 Icons tracer ✅]
   BT15 --> BT06
   BT06 --> BT07[BT-07 Grid, read-only]
   BT07 --> BT02[BT-02 README]
@@ -84,11 +84,13 @@ unknown (a new permission, an unproven API, unknown cost) first rather than last
 
 ## Parallelism
 
-What is left of BarT is a welcome window, an explanation, a keyboard shortcut and the icons —
-which is why almost every open issue is 👤 HITL. Only a person can judge whether an explanation
-lands or a shortcut feels right.
+What is left of BarT is a welcome window, an explanation and a keyboard shortcut — which is why
+almost every open issue is 👤 HITL. Only a person can judge whether an explanation lands or a
+shortcut feels right. [BT-07](issues/BT-07.md) is the exception and can run alongside any of them:
+the capture path it builds on is proven and measured.
 
-[BT-03](issues/BT-03.md) has landed, and its acceptance measured the ceiling for
-[BT-06](issues/BT-06.md): even *with* the permission, nine of twenty-one items carry no window
-title at all — every Apple extra hosted by Control Center. Names alone will never tell those nine
-apart, so the icons are not a nicety, they are the only thing that can.
+[BT-06](issues/BT-06.md) settled the ceiling that [BT-03](issues/BT-03.md) measured: nine of
+twenty-one items carry no window title at all, and the icon is what tells those nine apart. It also
+settled how they have to be drawn — the menu bar is translucent, so under a dark desktop picture
+macOS renders every glyph white, and an icon shown on a plain window background is invisible. The
+grid in BT-07 inherits that chip, not just the images.

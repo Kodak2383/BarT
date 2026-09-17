@@ -29,6 +29,10 @@ final class MenuBarController {
 	private let source = MenuBarItemSource()
 	private let engine = SeparatorEngine()
 
+	/// The items' real icons. Read by the settings list, which also drives the capture — there
+	/// is nothing to look at while no window is open.
+	let icons = ItemIconSource()
+
 	private var hotKey: GlobalHotKey?
 
 	/// `false` when ``GlobalHotKey/displayName`` is already taken by another app.
@@ -186,6 +190,7 @@ final class MenuBarController {
 	func runStartupSelfTest() async {
 		await engine.runSeparatorSelfTest()
 		MenuBarItemID.runDisplayNameSelfTest()
+		await icons.runIconSelfTest()
 		print(
 			"[BarT] Hotkey \(GlobalHotKey.displayName): "
 				+ (isHotKeyRegistered ? "registered" : "FAILED — already taken")
@@ -195,6 +200,9 @@ final class MenuBarController {
 	/// Re-reads the bar right now. Needed after the screen recording permission changes: the
 	/// names cached from an enumeration without it are all the hosting process.
 	func refresh() {
+		// Same permission, same reason: an icon that could not be captured without it is not a
+		// window that refuses, it is one that was never asked.
+		icons.reset()
 		handleItemsChanged(source.snapshot())
 	}
 
