@@ -1,99 +1,92 @@
 # BarT — Board
 
-Scope and decisions: [PRD.md](PRD.md). One file per issue in [issues/](issues/) — each is written
-to be handed to a fresh session on its own.
+Scope and decisions: [PRD.md](PRD.md). One file per issue in [issues/](issues/) — each written to
+be handed to a fresh session on its own.
+
+**Revised 2026-09-17.** The Ice code comes out (PRD §7), which deletes automatic arranging and with
+it four issues. BarT ships free; the price question waits for the assertion engine.
 
 **Mode markers**
-- 🤖 **AFK** — I can build *and* verify it alone (build, self-tests, screenshots, `System Events`
-  queries). You read the result when you feel like it.
-- 👤 **HITL** — needs you at some point, and the issue says exactly where. Three things I cannot do:
-  grant a TCC permission, judge whether something *feels* right, and use your GitHub account.
+- 🤖 **AFK** — I can build *and* verify it alone (build, self-tests, screenshots, `System Events`).
+- 👤 **HITL** — needs you somewhere, and the issue says where. Three things I cannot do: grant a
+  permission, judge whether something *feels* right, use your GitHub account.
 
 ## Columns
 
-### Ready — unblocked, startable now, in parallel
+### Ready — unblocked, startable now
 | ID | Title | Mode |
 | --- | --- | --- |
-| [BT-03](issues/BT-03.md) | Accessibility permission: honest state, honest UI | 👤 HITL |
+| [BT-15](issues/BT-15.md) | **Remove the Ice-derived drag engine** | 🤖 AFK |
 | [BT-11](issues/BT-11.md) | Configurable shortcut | 👤 HITL |
 
 ### Blocked
 | ID | Title | Mode | Waiting for |
 | --- | --- | --- | --- |
-| [BT-02](issues/BT-02.md) | README for a public audience | 🤖 AFK | BT-01 ✅, **BT-09** |
-| [BT-04](issues/BT-04.md) | Welcome window on first launch | 👤 HITL | BT-03 |
-| [BT-05](issues/BT-05.md) | Starting-point proposal | 👤 HITL | BT-04 |
-| [BT-06](issues/BT-06.md) | Tracer bullet: real icons in the existing list | 👤 HITL | BT-03 |
-| [BT-07](issues/BT-07.md) | The section grid replaces the list | 🤖 AFK | BT-06 |
-| [BT-08](issues/BT-08.md) | Context menu and accessible icons | 🤖 AFK | BT-07 |
-| [BT-09](issues/BT-09.md) | Drag icons between sections | 👤 HITL | BT-08 |
-| [BT-10](issues/BT-10.md) | Rework "could not be positioned" | 🤖 AFK | BT-07 |
+| [BT-03](issues/BT-03.md) | Screen recording: ask at the right moment | 👤 HITL | BT-15 |
+| [BT-04](issues/BT-04.md) | Welcome window on first launch | 👤 HITL | BT-15 |
+| [BT-16](issues/BT-16.md) | Teach the ⌘-drag | 👤 HITL | BT-15 |
+| [BT-06](issues/BT-06.md) | Tracer bullet: real icons | 👤 HITL | BT-03, BT-15 |
+| [BT-07](issues/BT-07.md) | The section grid, read-only | 🤖 AFK | BT-06 |
+| [BT-02](issues/BT-02.md) | README for a public audience | 🤖 AFK | BT-07, BT-16 |
 | [BT-14](issues/BT-14.md) | Publish 1.0 | 👤 HITL | everything |
-
-### In progress
-_(empty)_
 
 ### Done
 | ID | Title | Verified by |
 | --- | --- | --- |
-| [BT-12](issues/BT-12.md) | Auto-collapse after 15 seconds | Icon `»` → hotkey → `«` → 16 s → `»`, captured from the live menu bar |
+| [BT-12](issues/BT-12.md) | Auto-collapse after 15 seconds | Icon `»` → hotkey → `«` → 16 s → `»`, captured live |
 | [BT-01](issues/BT-01.md) | Ship the licences | grep proves no "MIT" claim is left; about-panel text still needs one human look |
 
 ### Dropped
 | ID | Title | Why |
 | --- | --- | --- |
-| [BT-13](issues/BT-13.md) | Accessibility names for the two tabs | The problem did not exist — `.tabItem` already sets `AXDescription`; measured on the unmodified build |
+| [BT-13](issues/BT-13.md) | Accessibility names for the tabs | The problem never existed — `.tabItem` already sets `AXDescription` |
+| [BT-05](issues/BT-05.md) | Starting-point proposal | BarT cannot move items any more |
+| [BT-08](issues/BT-08.md) | Context menu on icons | The items view is read-only |
+| [BT-09](issues/BT-09.md) | Drag icons between sections | Would need the capability BT-15 removes |
+| [BT-10](issues/BT-10.md) | Rework "could not be positioned" | The failure disappears with the engine |
 
 ## Dependency graph
 
 ```mermaid
 graph LR
-  BT01[BT-01 Licences ✅] --> BT02[BT-02 README]
-  BT09 --> BT02
-  BT03[BT-03 Permission UX] --> BT04[BT-04 Welcome]
-  BT04 --> BT05[BT-05 Proposal]
+  BT15[BT-15 Remove drag engine] --> BT03[BT-03 Screen recording]
+  BT15 --> BT04[BT-04 Welcome]
+  BT15 --> BT16[BT-16 Teach ⌘-drag]
+  BT04 --> BT16
   BT03 --> BT06[BT-06 Icons tracer]
-  BT06 --> BT07[BT-07 Grid]
-  BT07 --> BT08[BT-08 Context menu]
-  BT08 --> BT09[BT-09 Drag]
-  BT07 --> BT10[BT-10 Error UI]
+  BT15 --> BT06
+  BT06 --> BT07[BT-07 Grid, read-only]
+  BT07 --> BT02[BT-02 README]
+  BT16 --> BT02
   BT11[BT-11 Shortcut]
-  BT12[BT-12 Auto-collapse ✅]
+  BT01[BT-01 Licences ✅] --> BT02
   BT02 --> BT14[BT-14 Publish]
-  BT05 --> BT14
-  BT09 --> BT14
-  BT10 --> BT14
+  BT07 --> BT14
+  BT16 --> BT14
   BT11 --> BT14
-  BT12 --> BT14
+  BT12[BT-12 Auto-collapse ✅] --> BT14
 ```
 
 ## How this is cut
 
-Every issue is a **vertical slice**: it crosses whatever layers it needs — capture engine,
-controller, view — and ends in something observable in the running app. That is why each one
-carries a "Visible result" line; if an issue cannot state one, it is cut wrong and should be
-merged with its neighbour.
+Every issue is a **vertical slice**: it crosses whatever layers it needs and ends in something
+observable in the running app. Hence the "Visible result" line in each — an issue that cannot state
+one is cut wrong.
 
-The one place this matters most is the icons. The horizontal version would have been "build the
-capture engine", then "build the grid on top of it" — and the riskiest unknown in the plan (a new
-permission, an unproven API, unknown cost) would only be answered at the end of the second step.
-Instead [BT-06](issues/BT-06.md) is a tracer bullet: capture one icon per item, cache it, and draw
-it in the list **that already exists**. The grid ([BT-07](issues/BT-07.md)) then only rearranges
-data that is already flowing.
+[BT-15](issues/BT-15.md) is the exception that proves it: its visible result is *nothing changes*.
+It deletes machinery the user never saw, and the proof of success is that reveal and collapse
+behave exactly as before. That is why it is one removing commit and nothing else — revertible in a
+single step if the assertion engine later wants pieces back.
 
-Two ordering rules that are not visible in the graph:
-
-- **BT-07 → BT-08 stay adjacent.** In between, the items view is mouse-only. The keyboard and
-  VoiceOver path is a floor, not a follow-up.
-- **BT-03 comes first among the HITL issues.** Until the accessibility permission is granted and
-  the app tells the truth about it, nothing else can be tested honestly — every item is
-  misattributed and every name is wrong.
+The tracer-bullet idea survives in [BT-06](issues/BT-06.md): capture one icon per item and draw it
+in the list that already exists, before building the grid on top of it. It answers the riskiest
+unknown (a new permission, an unproven API, unknown cost) first rather than last.
 
 ## Parallelism
 
-BT-01 and BT-12 are done, BT-13 turned out to be a non-issue. BT-02 moved behind BT-09: a README
-that describes the finished app cannot be written while the items view is still the old list — the
-original dependency (BT-01 only) was wrong.
+**BT-15 blocks nearly everything and is 🤖 AFK.** It is the obvious next task and needs nobody
+watching. [BT-11](issues/BT-11.md) (shortcut recorder) is the only thing that can run beside it,
+and it needs you for a few key combinations.
 
-That empties the AFK column. What is left to start is **BT-03 and BT-11**, both 👤 HITL: they need a
-window in which you can click a system dialog and press a few key combinations.
+Everything downstream of BT-15 should wait for it to land — building on an engine that is about to
+be deleted is wasted work.

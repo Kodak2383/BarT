@@ -1,126 +1,125 @@
 # BarT — Product Requirements
 
-Written in English to match the rest of the repository, which goes public.
-Every decision below was made by the maintainer in the grilling session of 2026-09-17;
-the round/question it came from is noted as `(R2-Q3)` so nothing here looks like an
-assumption when it was a choice.
+Written in English to match the rest of the repository. Decisions carry the grilling round they
+came from `(R2-Q3)`, so nothing here reads as an assumption when it was a choice.
+
+**Revised 2026-09-17** after two findings that arrived late: Ice is GPL-3, not MIT, and the
+commercial question turns on exactly the code that came from it. See §7.
 
 ## 1. What BarT is
 
-A menu bar manager for macOS in the tradition of Bartender: menu bar items are assigned to
-three sections — always visible, hidden, always hidden — and the hidden ones are revealed on
-demand by clicking BarT's own icon or pressing a keyboard shortcut.
+A menu bar manager for macOS: two separator items of BarT's own split the bar into three areas, and
+everything to the left of them is pushed out of view until the user asks for it — by clicking
+BarT's icon or pressing a shortcut.
 
-The target state for a typical user is a **curated** menu bar (R1-Q2): roughly half the items
-stay put, the rest is one click away. Not an empty bar, and not just two offenders tucked away.
+The target state is a **curated** menu bar (R1-Q2): roughly half the items stay, the rest is one
+click away.
+
+**What BarT does not do any more:** move other apps' items by itself. Arranging which item belongs
+to which area is done by the user, with the ⌘-drag macOS provides natively. See §7.
 
 ## 2. Distribution
 
 | Decision | Choice | Source |
 | --- | --- | --- |
 | Audience | Public release, source and binary on GitHub | R2-Q1 |
+| Price | **Free.** The paid question is deferred, see §7 | 2026-09-17 |
 | macOS | 26.0 only. A macOS 27 version follows once the maintainer runs 27 | R2-Q1 |
-| Two OS versions | Eventually **one** app choosing its engine at runtime, not two builds | R3-Q5 |
+| Two OS versions | Eventually **one** app choosing its engine at runtime | R3-Q5 |
 | Signing | Unsigned, not notarized; README documents the Gatekeeper path | R2-Q3 |
 | Updates | GitHub Releases, manual download, no Sparkle | R2-Q4 |
-| Licence | **GPL-3.0** — inherited from Ice, which is GPL-3, not MIT as assumed in R2-Q2 | R2-Q2, corrected 2026-09-17 |
+| Licence | **GPL-3.0 today** (inherited from Ice). Reconsidered once the Ice code is gone — see BT-15 | R2-Q2, corrected |
 | Telemetry | None. The app makes no network requests at all | set here |
 
 The Mac App Store is out of the question — BarT uses private CGS APIs.
 
-**On the licence:** the session assumed Ice was MIT-licensed, as did six source comments and the
-README. It is GPL-3, at the referenced commit as well. Since BarT takes code from it (`scromble`,
-the tap construction, the CGS signatures), BarT is a derivative work and ships under GPL-3 too.
-This costs the project nothing it needs — the source goes public regardless.
-
-**Consequence of shipping unsigned:** macOS ties accessibility and screen recording permissions
-to the code signature. Without a stable Developer ID, every update invalidates them and the user
-has to grant both again. This must be stated in the README and in the welcome window rather than
-discovered.
+**Unsigned has a price:** macOS ties permissions to the code signature, so every update
+invalidates them and the user has to grant again. This belongs in the README and the welcome
+window rather than being discovered.
 
 ## 3. Scope of 1.0
 
-The maintainer chose the complete cut (R5-Q3): **everything below ships before the first public
-release.** No intermediate 0.2.
+Everything below ships before the first public release (R5-Q3). No intermediate version.
 
-### 3.1 First run and permissions
+### 3.1 Hiding and revealing — the core
 
-- A **welcome window** on first launch (R2-Q3) explains in two sentences what BarT does and why
-  it needs the accessibility permission, with a button that triggers the system dialog.
-- The accessibility status is checked **live** (on window activation), not once when the settings
-  window opens. Granting the permission and coming back must show the new state.
-- While the permission is missing, the items view shows an explanation and a button — **never a
-  list of items**, because without the permission every item is misattributed to Control Center
-  and the names are wrong.
-- The **screen recording** permission is requested separately and later (R2-Q5): the first time
-  the items view is opened, in the moment its benefit is visible. Not during the welcome window.
-- As the last step of the welcome window, BarT offers a **starting point** (R4-Q6, R5-Q2): it
-  proposes moving everything except clock, battery, Wi-Fi and Control Center to "Hidden", shows
-  what that would look like, and applies it only on a button press. "Set up myself" is an equal
-  choice, not a fine-print escape.
-
-### 3.2 The items view
-
-- Items are shown as their **real icons**, captured from the menu bar via ScreenCaptureKit
-  (R1-Q4). This is what turns the window from a configuration table into a picture of the user's
-  own menu bar.
-- Each section is a **grid** that wraps onto more rows as needed (R4-Q1), not a single scrolling
-  row: it stays usable at 8 items and at 40.
-- Icons are **cached per item** and fetched once (R4-Q3). A frozen CPU readout in the list is
-  harmless; a window that continuously captures screen content is not.
-- Without the screen recording permission the view falls back to names — it does not break.
-- Items move between sections by **dragging** and, equally, through a **context menu** on each
-  icon (R4-Q2). The context menu is what keeps the view usable by keyboard and VoiceOver once
-  the per-row pickers are gone; it is not an afterthought.
-- Ordering **within** a section is not offered (R4-Q3). The drag technique cannot position
-  neighbouring items independently — that limit is what the oscillation brake exists for, and
-  sorting inside a section would turn a rare failure into the normal case.
-
-### 3.3 Revealing and collapsing
-
+- Two separator status items split the bar into Visible / Hidden / Always hidden. This mechanism is
+  BarT's own; it is also what Hidden Bar, Dozer and Vanilla use, and it is **not** derived from Ice.
 - Left click on BarT's icon reveals "Hidden"; ⌥-click additionally reveals "Always hidden".
-- One configurable system-wide shortcut does the same (R3-Q1, R4-Q7). Exactly one — the ⌥
-  variant stays a click gesture, and a shortcut for the settings window is not worth a third
-  binding.
-- A click outside the menu bar collapses. Clicks inside do not.
-- **Auto-collapse after 15 seconds** (R4-Q4), fixed, not configurable.
+- One configurable system-wide shortcut does the same (R3-Q1, R4-Q7).
+- A click outside the menu bar collapses; clicks inside do not.
+- Auto-collapse after 15 seconds of inactivity (R4-Q4). ✅ done
 
-### 3.4 Settings
+### 3.2 Arranging items
 
-Two tabs (R5-Q1): "General" and "Items". Both tabs must carry accessibility names — today they
-announce themselves as "radio button 1" and "radio button 2".
+The user drags items across the separators themselves, with ⌘ held — the gesture macOS has always
+offered. macOS remembers the arrangement; BarT does not store an assignment of its own.
 
-General holds: launch at login, both permission states, the shortcut recorder, and the
-auto-collapse behaviour.
+BarT's job here is to **explain the gesture** and to **show the result**, not to perform it.
 
-### 3.5 When an item cannot be placed
+### 3.3 The items view
 
-Two physically adjacent items cannot be positioned independently; after three attempts the
-oscillation brake gives up. The current full-paragraph grey box is replaced by (R4-Q4):
-a one-line summary naming the item, a disclosure for the explanation, a **Retry** button, and a
-way to dismiss it.
+Read-only. It shows what currently sits in each of the three areas, as the items' **real icons**,
+captured via ScreenCaptureKit (R1-Q4) and cached per item (R4-Q3).
+
+This is the one thing the free competition does not offer: seeing which icon ended up where without
+expanding the bar and guessing. It cannot change anything — that is §3.2's job.
+
+Sections are wrapping grids (R4-Q1). Without the screen recording permission the view falls back to
+what it can determine without it, and says so.
+
+### 3.4 Permissions
+
+With the drag engine gone, BarT needs **no accessibility permission at all**. Enumerating menu bar
+windows through the CGS list works without it; it was needed only to attribute items to their
+owning app for the drags.
+
+What remains is **screen recording**, and only for the icons in §3.3. It is requested the first
+time that view is opened, never at launch (R2-Q5).
+
+A welcome window on first launch (R2-Q3) explains in two sentences what BarT does and how to move
+items with ⌘-drag.
+
+### 3.5 Settings
+
+Two tabs (R5-Q1): General holds launch at login, the screen recording state, the shortcut recorder
+and the auto-collapse note. Items holds §3.3.
 
 ## 4. Explicit non-goals for 1.0
 
-- **Multi-display**: only the main screen is managed (R4-Q5). Other displays are left alone, and
-  the README says so.
-- **Ordering within a section** (R4-Q3).
-- **Auto-update / Sparkle** (R2-Q4) — reconsider at 0.3, since an app built on private APIs can
-  break with any macOS update.
-- **Notarization** (R2-Q3) — reconsider if the unsigned path turns out to cost more users than
-  the developer programme costs money.
-- **Localisation**: English only.
-- **Telemetry or crash reporting**: none.
+- **Moving items automatically.** Removed deliberately, see §7.
+- **Multi-display**: main screen only (R4-Q5), documented in the README.
+- **Ordering within a section** (R4-Q3) — moot now that BarT does not arrange anything.
+- Auto-update, notarization, localisation, telemetry.
 
 ## 5. Known limits to document, not fix
 
-- Items macOS pins itself (clock, Control Center) cannot be moved.
-- Permissions are lost on every update (see §2).
-- The drag engine depends on macOS 26 behaviour, not on an SDK version — a system update can
-  break it.
+- Items macOS pins itself (clock, Control Center) cannot be moved by anyone, including the user.
+- Permissions are lost on every update (§2).
+- The separator mechanism depends on macOS behaviour, not on an SDK version.
 
 ## 6. After 1.0
 
-- macOS 27 support via a second engine, selected at runtime; the `HideEngine` protocol is
-  introduced at that point and not before (R3-Q5).
-- Sparkle, notarization, multi-display, ordering within a section.
+- **macOS 27 assertion engine.** Bartender 7 advertises "zero mouse interruptions" — the same
+  technique. It restores automatic arranging *without* any foreign code, and it is the point at
+  which a paid version becomes defensible (§7). The `HideEngine` protocol is introduced then, not
+  before (R3-Q5).
+- Sparkle, notarization, multi-display.
+
+## 7. Why the drag engine is being removed
+
+The simulated ⌘-drag (`scromble`), the event tap and the CGS signatures came from
+[Ice](https://github.com/jordanbaird/Ice), which is **GPL-3.0** — not MIT, as six source comments
+and the README claimed for weeks. GPL-3 is copyleft, so BarT inherits it on distribution.
+
+That does not forbid selling BarT; it makes selling pointless, because every buyer may pass the
+source on. Measured against the market, a paid BarT would sit next to Vanilla Pro (~10 $ for
+almost exactly this feature set) and below Bartender 7 (21.79 € for far more), with two good free
+competitors alongside.
+
+The decision (2026-09-17): **take the Ice code out, ship for free, revisit the price when the
+assertion engine makes BarT do something the free competition cannot.** What is lost in the
+meantime is automatic arranging — which the user can do themselves in about a minute, once.
+
+What this buys: no foreign code, no licence constraint, no injected mouse events, no accessibility
+permission, and the most fragile part of the app gone.
