@@ -99,6 +99,32 @@ final class MenuBarController {
 		startOutsideClickMonitor()
 		startAutoCollapse()
 		onRevealChanged?(true)
+		captureRevealedIcons()
+	}
+
+	/// The only moment a hidden item can be photographed at all.
+	///
+	/// ScreenCaptureKit has nothing to capture for a window that is not rendered — a hidden item
+	/// sits off to the left of the bar and the capture fails with -3811. Revealing is what brings
+	/// it on screen, so that is when the icon is fetched, and the cache keeps it for the whole
+	/// session. Cheap to repeat: a pass with nothing missing returns without a single call.
+	private func captureRevealedIcons() {
+		Task { [weak self] in
+			// The separators change width with an animation (~450 ms); until it ends the items
+			// are still sliding into view.
+			try? await Task.sleep(for: .milliseconds(500))
+			guard let self, self.engine.reveal != .none else { return }
+			// Enumerated fresh rather than from ``items``: what matters here is which windows
+			// are on screen *now*, and that is exactly what revealing just changed.
+			await self.icons.load(for: self.currentItems())
+		}
+	}
+
+	/// The bar as it is this instant, without touching the poll's own bookkeeping.
+	private func currentItems() -> [MenuBarItem] {
+		MenuBarItemSource.enumerate(
+			excluding: excludedWindowIDs.union(engine.separatorWindowIDs)
+		)
 	}
 
 	private func collapse() {

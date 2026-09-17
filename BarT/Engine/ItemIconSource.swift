@@ -35,8 +35,15 @@ final class ItemIconSource {
 	func icon(for windowID: CGWindowID) -> NSImage? { icons[windowID] }
 
 	/// Captures every icon that is not cached yet; a no-op once they all are.
+	/// - Parameter items: only the ones currently on screen are attempted. A window that is not
+	///   rendered has nothing to capture — ScreenCaptureKit answers with error -3811 (measured
+	///   2026-09-17 on a hidden item), and a hidden item is pushed off to the left of the bar.
+	///   Those get their turn from ``MenuBarController``, which runs a pass while the bar is
+	///   revealed and they are briefly visible.
 	func load(for items: [MenuBarItem]) async {
-		let missing = items.filter { icons[$0.windowID] == nil && !failed.contains($0.windowID) }
+		let missing = items.filter {
+			$0.isOnScreen && icons[$0.windowID] == nil && !failed.contains($0.windowID)
+		}
 		guard !missing.isEmpty, !isCapturing, ScreenRecordingPermission.isGranted else { return }
 		isCapturing = true
 		defer { isCapturing = false }
