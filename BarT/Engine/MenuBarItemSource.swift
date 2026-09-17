@@ -1,5 +1,4 @@
 import AppKit
-import ApplicationServices
 import CoreGraphics
 
 /// Enumerates every menu bar item of every running app.
@@ -10,13 +9,11 @@ final class MenuBarItemSource: NSObject {
 	private(set) var items: [MenuBarItem] = []
 
 	/// Returns the window IDs that must never show up as items — BarT's own status items
-	/// (icon, separators). Keyed by window ID rather than PID/bundle ID, because the latter
-	/// are briefly attributed wrongly right after a drag (see ``MenuBarController``).
+	/// (icon, separators).
 	///
-	/// Deliberately a closure instead of a set: the separators only come into existence along
-	/// the way, and between creating them and adding them to a set there would be a polling
-	/// window of up to two seconds during which they slip through as perfectly ordinary,
-	/// manageable items — with the result that the app starts moving its own separators.
+	/// Deliberately a closure instead of a set: the separators come into existence a moment
+	/// after launch, and between creating them and adding them to a set there would be a
+	/// polling window of up to two seconds during which they show up as ordinary items.
 	var excludedWindowIDs: () -> Set<CGWindowID> = { [] }
 
 	/// Called only when the item list has actually changed.
@@ -90,10 +87,6 @@ final class MenuBarItemSource: NSObject {
 	/// up in the same CGS list, but sits at level 24 and is not an item.
 	private static let statusItemLayer = Int(CGWindowLevelForKey(.statusWindow))
 
-	/// Maximum deviation between an item's AX and CGS center. Measured live: 0.0 pt. Items are
-	/// at least 24 pt apart, which rules out a mismatch.
-	private static let midXTolerance: CGFloat = 2
-
 	/// Returns every menu bar item, ordered left to right.
 	/// - Parameter excludedWindowIDs: windows that must never come back as items (BarT's own
 	///   status items).
@@ -115,18 +108,11 @@ final class MenuBarItemSource: NSObject {
 					&& description[kCGWindowLayer as String] as? Int == statusItemLayer
 			}
 
-		let owners = accessibilityOwners()
-
-		// Two passes: first collect the raw data and sort it by x, and only then assign the
-		// sibling position per group (same bundleID+title) — that position needs the final
-		// left-to-right order to be stable.
 		struct RawItem {
 			let windowID: CGWindowID
 			let pid: pid_t
 			let bundleID: String
 			let title: String
-			let identifier: String?
-			let label: String?
 			let frame: CGRect
 			let isOnScreen: Bool
 		}
@@ -137,212 +123,59 @@ final class MenuBarItemSource: NSObject {
 		for description in descriptions {
 			guard
 				let windowID = description[kCGWindowNumber as String] as? CGWindowID,
-				// Our own items (status icon, separators) never belong in the managed list:
-				// they are not ordinary items the user can hide or show. Including them was
-				// observed live to trigger an endless loop — the reconcile logic took the
-				// (almost always "not visible") separator for a broken item and tried to
-				// repair it forever.
-				// Keyed by window ID rather than PID/bundle ID: both were live-observed to be
-				// wrong right after a drag (misattributed to Control Center) — the window ID
-				// is untouched by that race.
+				// Our own items (status icon, separators) never belong in the list: they are
+				// not items the user arranges. Keyed by window ID rather than PID/bundle ID,
+				// because every status item reports the same hosting process — a PID would
+				// exclude half the bar.
 				!excludedWindowIDs.contains(windowID),
-				let hostPID = description[kCGWindowOwnerPID as String] as? pid_t,
+				let pid = description[kCGWindowOwnerPID as String] as? pid_t,
 				// Frame read live via CGS rather than from kCGWindowBounds: the description is
-				// a snapshot and measurably lags reality after a drag.
+				// a snapshot and measurably lags reality.
 				let frame = CGSBridge.frame(for: windowID)
 			else { continue }
 
-			let owner = owners.first { abs($0.midX - frame.midX) <= midXTolerance }
-			let pidValue = owner?.pid ?? hostPID
-
 			let ownerName = description[kCGWindowOwnerName as String] as? String
-			let bundleID = owner?.bundleID
-				?? NSRunningApplication(processIdentifier: pidValue)?.bundleIdentifier
+			let bundleID = NSRunningApplication(processIdentifier: pid)?.bundleIdentifier
 				?? ownerName
-				?? "pid.\(pidValue)"
+				?? "pid.\(pid)"
 
 			raw.append(
 				RawItem(
-					windowID: windowID, pid: pidValue, bundleID: bundleID,
+					windowID: windowID, pid: pid, bundleID: bundleID,
 					title: description[kCGWindowName as String] as? String ?? "",
-					identifier: owner?.identifier, label: owner?.label,
 					frame: frame, isOnScreen: onScreen.contains(windowID)
 				)
 			)
 		}
 		raw.sort { $0.frame.minX < $1.frame.minX }
 
-		func groupKey(_ item: RawItem) -> String {
-			item.title.isEmpty ? item.bundleID : "\(item.bundleID):\(item.title)"
-		}
-		var groupCounts: [String: Int] = [:]
-		for item in raw { groupCounts[groupKey(item), default: 0] += 1 }
-
-		var seenSoFar: [String: Int] = [:]
 		return raw.map { item in
-			let key = groupKey(item)
-			let index = seenSoFar[key, default: 0]
-			seenSoFar[key] = index + 1
-			let id = MenuBarItemID(
-				windowID: item.windowID,
-				ownerPID: item.pid,
-				bundleID: item.bundleID,
-				title: item.title,
-				siblingIndex: index,
-				siblingCount: groupCounts[key] ?? 1,
-				identifier: item.identifier,
-				label: item.label
+			MenuBarItem(
+				id: MenuBarItemID(
+					windowID: item.windowID, ownerPID: item.pid,
+					bundleID: item.bundleID, title: item.title
+				),
+				frame: item.frame, isOnScreen: item.isOnScreen
 			)
-			return MenuBarItem(id: id, frame: item.frame, isOnScreen: item.isOnScreen)
 		}
-	}
-
-	// MARK: Owner lookup via the accessibility API
-
-	/// A menu bar item an app reports as its own.
-	private struct ItemOwner {
-		/// Horizontal center in global CG coordinates.
-		let midX: CGFloat
-		let pid: pid_t
-		let bundleID: String
-		/// `kAXIdentifier`, e.g. `com.apple.menuextra.battery`. Apple's menu extras set it;
-		/// third-party items generally do not.
-		let identifier: String?
-		/// Readable name, see ``accessibilityLabel(of:)``.
-		let label: String?
-	}
-
-	/// Reads each running app's *own* menu bar items.
-	///
-	/// `kCGWindowOwnerPID` is useless for status item windows: macOS renders them in a hosting
-	/// process, so the window list reports the same PID for *all* items. Verified live on
-	/// macOS 26.6.2 — all 21 items came back as `com.apple.controlcenter` (pid 674) although
-	/// 11 different apps were involved. The CGS route (`CGSGetWindowOwner`) returns the same
-	/// hosting connection and does not help either.
-	///
-	/// The only dependable source is the AX hierarchy: `kAXExtrasMenuBarAttribute` returns
-	/// only an app's own items. The match is made on the horizontal center — the AX frames are
-	/// inflated by 1 pt compared to the CGS frames, but the center matches exactly. (Same
-	/// approach as in "Ice", GPL-3.0, github.com/jordanbaird/Ice.)
-	private static func accessibilityOwners() -> [ItemOwner] {
-		guard AccessibilityPermission.isTrusted else { return [] }
-
-		var owners: [ItemOwner] = []
-		for app in NSWorkspace.shared.runningApplications {
-			let element = AXUIElementCreateApplication(app.processIdentifier)
-			// Without a timeout one stuck process holds up the entire polling pass.
-			AXUIElementSetMessagingTimeout(element, 1)
-
-			var menuBarValue: CFTypeRef?
-			guard
-				AXUIElementCopyAttributeValue(
-					element, kAXExtrasMenuBarAttribute as CFString, &menuBarValue
-				) == .success,
-				let menuBarValue,
-				CFGetTypeID(menuBarValue) == AXUIElementGetTypeID()
-			else { continue }
-
-			var childrenValue: CFTypeRef?
-			guard
-				AXUIElementCopyAttributeValue(
-					menuBarValue as! AXUIElement, kAXChildrenAttribute as CFString, &childrenValue
-				) == .success,
-				let children = childrenValue as? [AXUIElement]
-			else { continue }
-
-			let bundleID = app.bundleIdentifier
-				?? app.localizedName
-				?? "pid.\(app.processIdentifier)"
-
-			for child in children {
-				// Control Center also reports items that are not placed; those have a zero
-				// frame and would otherwise match on center 0.
-				guard let frame = axFrame(of: child), frame.width > 0 else { continue }
-				owners.append(
-					ItemOwner(
-						midX: frame.midX, pid: app.processIdentifier, bundleID: bundleID,
-						identifier: axString(of: child, kAXIdentifierAttribute),
-						label: accessibilityLabel(of: child)
-					)
-				)
-			}
-		}
-		return owners
-	}
-
-	/// The readable name an app gives its item, or `nil`.
-	///
-	/// Two sources, because apps use them differently: Apple's menu extras fill `AXDescription`
-	/// ("Battery", "Bluetooth"), while third-party apps tend to leave it empty and put something
-	/// in `AXHelp` instead ("CPU: Mini", "APPLE SSD AP1024R").
-	///
-	/// Everything from the first comma on is dropped: these strings routinely append live status
-	/// ("WiFi, connected, 3 bars"), which is both too long for the list and changes under you.
-	/// The part before the comma is the name.
-	private static func accessibilityLabel(of element: AXUIElement) -> String? {
-		for attribute in [kAXDescriptionAttribute, kAXHelpAttribute] {
-			guard let value = axString(of: element, attribute) else { continue }
-			let name = value.split(separator: ",", maxSplits: 1).first.map(String.init) ?? value
-			let trimmed = name.trimmingCharacters(in: .whitespaces)
-			if !trimmed.isEmpty { return trimmed }
-		}
-		return nil
-	}
-
-	private static func axString(of element: AXUIElement, _ attribute: String) -> String? {
-		var value: CFTypeRef?
-		guard
-			AXUIElementCopyAttributeValue(element, attribute as CFString, &value) == .success,
-			let string = value as? String,
-			!string.isEmpty
-		else { return nil }
-		return string
-	}
-
-	private static func axFrame(of element: AXUIElement) -> CGRect? {
-		var positionValue: CFTypeRef?
-		var sizeValue: CFTypeRef?
-		guard
-			AXUIElementCopyAttributeValue(
-				element, kAXPositionAttribute as CFString, &positionValue
-			) == .success,
-			AXUIElementCopyAttributeValue(
-				element, kAXSizeAttribute as CFString, &sizeValue
-			) == .success,
-			let positionValue,
-			let sizeValue,
-			CFGetTypeID(positionValue) == AXValueGetTypeID(),
-			CFGetTypeID(sizeValue) == AXValueGetTypeID()
-		else { return nil }
-
-		var origin = CGPoint.zero
-		var size = CGSize.zero
-		guard
-			AXValueGetValue(positionValue as! AXValue, .cgPoint, &origin),
-			AXValueGetValue(sizeValue as! AXValue, .cgSize, &size)
-		else { return nil }
-		return CGRect(origin: origin, size: size)
 	}
 
 	/// Console dump for the debug menu item.
 	static func debugDump() {
 		let items = enumerate()
-		let owners = Set(items.map(\.id.bundleID))
-		print("[BarT] \(items.count) menu bar items from \(owners.count) apps (left → right):")
-		if !AccessibilityPermission.isTrusted {
-			print("[BarT]   Note: no accessibility permission — without it the owner lookup")
-			print("[BarT]   falls back to the hosting process and is wrong.")
-		}
-		if items.contains(where: { $0.id.title.isEmpty }) {
-			print("[BarT]   Note: items without a title cannot be persisted individually.")
+		print("[BarT] \(items.count) menu bar items (left → right):")
+		if !CGPreflightScreenCaptureAccess() {
+			print("[BarT]   Note: no screen recording permission — macOS withholds the window")
+			print("[BarT]   titles, so names fall back to the hosting app. Beware: a binary")
+			print("[BarT]   started straight from a terminal inherits the terminal's permission")
+			print("[BarT]   and shows names the installed app does not get.")
 		}
 		for item in items {
 			let flag = item.isOnScreen ? "visible" : "hidden "
 			let frame = String(
 				format: "x=%7.1f w=%5.1f", item.frame.minX, item.frame.width
 			)
-			print("[BarT]   \(flag)  \(frame)  win=\(item.windowID)  \(item.storageKey)")
-			print("[BarT]            → \(item.displayName)")
+			print("[BarT]   \(flag)  \(frame)  win=\(item.windowID)  \(item.displayName)")
 		}
 	}
 }

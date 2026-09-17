@@ -59,21 +59,6 @@ func CGSGetScreenRectForWindow(
 	_ outRect: inout CGRect
 ) -> CGError
 
-// Process Manager API, imported into Swift as "unavailable" (deprecated since 10.9), but the
-// symbol is still there. It gets its own Swift name so it does not collide with the unusable
-// import. Shim idea from Ice, Ice/Bridging/Shims/Deprecated.swift.
-@_silgen_name("GetProcessForPID")
-func shimGetProcessForPID(
-	_ pid: pid_t,
-	_ psn: inout ProcessSerialNumber
-) -> OSStatus
-
-@_silgen_name("CGSEventIsAppUnresponsive")
-func CGSEventIsAppUnresponsive(
-	_ cid: CGSConnectionID,
-	_ psn: inout ProcessSerialNumber
-) -> Bool
-
 // MARK: - Swift facade
 
 private let log = Logger(subsystem: "de.andreduhme.BarT", category: "CGSBridge")
@@ -102,14 +87,6 @@ enum CGSBridge {
 			return nil
 		}
 		return rect
-	}
-
-	/// An unresponsive owner process will not accept the synthetic Cmd-drag and leaves the
-	/// drag state hanging. Check before every drag.
-	static func isUnresponsive(pid: pid_t) -> Bool {
-		var psn = ProcessSerialNumber()
-		guard shimGetProcessForPID(pid, &psn) == noErr else { return false }
-		return CGSEventIsAppUnresponsive(CGSMainConnectionID(), &psn)
 	}
 
 	// MARK: Internal

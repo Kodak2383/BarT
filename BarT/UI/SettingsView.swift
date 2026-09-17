@@ -1,3 +1,4 @@
+import CoreGraphics
 import SwiftUI
 
 struct SettingsView: View {
@@ -24,7 +25,6 @@ private struct GeneralSettingsTab: View {
 	private let loginItems = LoginItemManager()
 
 	@State private var launchAtLogin: Bool
-	@State private var isAccessibilityTrusted = AccessibilityPermission.isTrusted
 
 	init(controller: MenuBarController) {
 		self.controller = controller
@@ -50,24 +50,6 @@ private struct GeneralSettingsTab: View {
 						}
 					}
 
-				LabeledContent("Accessibility") {
-					if isAccessibilityTrusted {
-						Label("Granted", systemImage: "checkmark.circle.fill")
-							.foregroundStyle(.green)
-					} else {
-						Button("Grant permission…") {
-							AccessibilityPermission.requestAccess()
-						}
-					}
-				}
-			} footer: {
-				if !isAccessibilityTrusted {
-					// Without this the app looks broken rather than unauthorized: items still
-					// appear, but all of them under the wrong owner.
-					Text("Without this permission items cannot be moved, and they all show up as belonging to Control Center.")
-						.font(.caption)
-						.foregroundStyle(.secondary)
-				}
 			}
 
 			Section("Revealing hidden items") {
@@ -92,9 +74,6 @@ private struct GeneralSettingsTab: View {
 			}
 		}
 		.formStyle(.grouped)
-		// ponytail: the status is only checked when the window opens, not live while it
-		// stays open. Reopening Settings is enough to refresh it.
-		.onAppear { isAccessibilityTrusted = AccessibilityPermission.isTrusted }
 	}
 }
 
@@ -111,18 +90,33 @@ private struct ItemsSettingsTab: View {
 					.padding(10)
 					.background(.quaternary)
 			}
+			if !CGPreflightScreenCaptureAccess() {
+				// Measured 2026-09-17: without this permission macOS withholds `kCGWindowName`,
+				// so every item falls back to its hosting app and the list reads "Control
+				// Center" twenty-one times. Saying so beats showing it silently. BT-03 turns
+				// this into a request, BT-06 replaces the names with the real icons.
+				Label(
+					"Item names need the screen recording permission — without it macOS reports every item as its hosting app.",
+					systemImage: "info.circle"
+				)
+				.font(.callout)
+				.foregroundStyle(.secondary)
+				.frame(maxWidth: .infinity, alignment: .leading)
+				.padding(10)
+				.background(.quaternary)
+			}
 			if controller.items.isEmpty {
 				ContentUnavailableView(
 					"No menu bar items found",
 					systemImage: "menubar.rectangle",
-					description: Text("BarT could not read the menu bar. Check the accessibility permission under General.")
+					description: Text("BarT could not read the menu bar.")
 				)
 			} else {
-				// Grouped by section rather than one flat list: the whole point of the window is
-				// seeing what ends up where, and with a picker per row that took reading every
-				// single line.
+				// Read-only (PRD §3.3): the view shows where items sit, it does not move them.
+				// Arranging is the user's own ⌘-drag in the menu bar — BT-16 explains the
+				// gesture properly, this is the placeholder until then.
 				List {
-					ForEach(MenuBarLayout.Section.allCases, id: \.self) { section in
+					ForEach(MenuBarSection.allCases, id: \.self) { section in
 						Section {
 							let sectionItems = items(in: section)
 							if sectionItems.isEmpty {
@@ -130,7 +124,7 @@ private struct ItemsSettingsTab: View {
 									.font(.callout)
 									.foregroundStyle(.tertiary)
 							} else {
-								ForEach(sectionItems, id: \.storageKey) { item in
+								ForEach(sectionItems, id: \.windowID) { item in
 									row(for: item)
 								}
 							}
@@ -148,28 +142,18 @@ private struct ItemsSettingsTab: View {
 	}
 
 	/// Items of one section, in the order they physically sit in the bar (left to right).
-	private func items(in section: MenuBarLayout.Section) -> [MenuBarItem] {
-		controller.items.filter { controller.layout.section(of: $0.storageKey) ?? .visible == section }
+	private func items(in section: MenuBarSection) -> [MenuBarItem] {
+		controller.items.filter { controller.section(of: $0) == section }
 	}
 
 	private func row(for item: MenuBarItem) -> some View {
-		HStack {
-			Text(item.displayName)
-				.lineLimit(1)
-				.truncationMode(.middle)
-			Spacer(minLength: 12)
-			Picker("", selection: sectionBinding(for: item)) {
-				Text("Visible").tag(MenuBarLayout.Section.visible)
-				Text("Hidden").tag(MenuBarLayout.Section.hidden)
-				Text("Always hidden").tag(MenuBarLayout.Section.alwaysHidden)
-			}
-			.labelsHidden()
-			.frame(width: 150)
-		}
-		.padding(.vertical, 2)
+		Text(item.displayName)
+			.lineLimit(1)
+			.truncationMode(.middle)
+			.padding(.vertical, 2)
 	}
 
-	private static func title(of section: MenuBarLayout.Section) -> String {
+	private static func title(of section: MenuBarSection) -> String {
 		switch section {
 		case .visible: "Visible"
 		case .hidden: "Hidden"
@@ -177,7 +161,7 @@ private struct ItemsSettingsTab: View {
 		}
 	}
 
-	private static func explanation(of section: MenuBarLayout.Section) -> String {
+	private static func explanation(of section: MenuBarSection) -> String {
 		switch section {
 		case .visible: "Always in the menu bar."
 		case .hidden: "Revealed by clicking the BarT icon or pressing \(GlobalHotKey.displayName)."
@@ -185,12 +169,6 @@ private struct ItemsSettingsTab: View {
 		}
 	}
 
-	private func sectionBinding(for item: MenuBarItem) -> Binding<MenuBarLayout.Section> {
-		Binding(
-			get: { controller.layout.section(of: item.storageKey) ?? .visible },
-			set: { controller.moveItem(item.storageKey, to: $0) }
-		)
-	}
 }
 
 #Preview {

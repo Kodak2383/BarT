@@ -1,19 +1,31 @@
 # Third-party code
 
-## Ice
+## Ice — removed 2026-09-17
 
 <https://github.com/jordanbaird/Ice> — Copyright © Jordan Baird — **GPL-3.0**
 
-BarT contains code taken from Ice. In particular:
+BarT used to contain code from Ice: the `scromble` technique, the tap construction and the
+undocumented `CGEvent` window-ID fields, all of which served one purpose — moving other apps'
+menu bar items with a simulated ⌘-drag. That engine was removed entirely (issue BT-15). Items are
+arranged by the user now, with the ⌘-drag macOS provides natively.
 
-| Where in BarT | What |
-| --- | --- |
-| `BarT/Engine/DragHideEngine.swift` | The `scromble` technique (`scromble(_:pid:)`), taken one to one from `MenuBarItemManager.scrombleEvent`; the undocumented `CGEvent` window-ID fields and their raw values |
-| `BarT/Engine/EventTap.swift` | The tap construction, from `Ice/Events/EventTap.swift` |
-| `BarT/Engine/Bridging.swift` | The private CGS signatures, verified one to one against `Ice/Bridging/Shims/Private.swift` @ `11edd39115f3f43a83ae114b5348df6a0e1741cf`, and the shim approach from `Ice/Bridging/Shims/Deprecated.swift` |
-| `BarT/Engine/MenuBarItemSource.swift` | The approach to identifying item owners |
+### What remains, and why
 
-Because of this, **BarT as a whole is licensed under the GPL-3.0** — see [LICENSE](LICENSE). The
-full text of the GPL-3.0 in that file is the licence of both projects.
+`BarT/Engine/Bridging.swift` declares six private CoreGraphics Services functions
+(`CGSMainConnectionID`, `CGSGetWindowCount`, `CGSGetOnScreenWindowCount`,
+`CGSGetOnScreenWindowList`, `CGSGetProcessMenuBarWindowList`, `CGSGetScreenRectForWindow`). Their
+signatures were originally verified against Ice's `Shims/Private.swift`, and the file still says
+so, because it is true and because a wrong signature here corrupts memory silently.
 
-Every location above is also marked in the source with the file and commit it came from.
+These are declarations of *Apple's* undocumented API — facts about an interface, not authored
+code. Four of the six are documented identically in the public
+[CGSInternal](https://github.com/NUIKit/CGSInternal) header archive, which is not derived from
+Ice. `CGSGetProcessMenuBarWindowList` is not among them.
+
+### Licence consequence
+
+Until the removal, BarT was a derivative work of a GPL-3.0 project and licensed accordingly. With
+the implementation code gone, that basis is gone too — but **BarT stays under GPL-3.0 for now**.
+Changing a licence is a deliberate act, not a side effect of a deletion, and it should happen when
+someone has looked at the remaining declarations properly rather than on the strength of this
+file. See `docs/PRD.md` §2.

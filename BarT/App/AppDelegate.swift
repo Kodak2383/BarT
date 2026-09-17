@@ -97,13 +97,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 				menuBarController.excludeOwnWindow(ownWindowID)
 			}
 			// Only start now: our own window ID is safely excluded before the controller
-			// enumerates for the first time and possibly creates the separators.
-			menuBarController.start()
+			// enumerates for the first time and creates the separators.
+			await menuBarController.start()
 			if wantsSelfTest {
-				// Everything the debug menu item runs, so the environment flag is the whole
-				// suite and not just the live half of it.
-				MenuBarLayout.runSelfTest()
-				OscillationGuard.runSelfTest()
 				await menuBarController.runStartupSelfTest()
 			}
 		}
@@ -174,8 +170,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
 	@objc
 	func debugRunLayoutSelfTest() {
-		MenuBarLayout.runSelfTest()
-		OscillationGuard.runSelfTest()
 		Task { [menuBarController] in await menuBarController.runStartupSelfTest() }
 	}
 
