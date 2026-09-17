@@ -102,6 +102,7 @@ final class MenuBarController {
 		isRevealed = true
 		engine.reveal = target
 		startOutsideClickMonitor()
+		startAutoCollapse()
 		onRevealChanged?(true)
 	}
 
@@ -110,6 +111,7 @@ final class MenuBarController {
 		guard engine.reveal != .none else { return }
 		engine.reveal = .none
 		stopOutsideClickMonitor()
+		autoCollapse?.cancel()
 		onRevealChanged?(false)
 		// ``isRevealed`` stays set until the animation ends: the separators change width with
 		// an animation (~450 ms, see DragHideEngine), so every position measurement is an
@@ -141,7 +143,13 @@ final class MenuBarController {
 		outsideClickMonitor = NSEvent.addGlobalMonitorForEvents(
 			matching: [.leftMouseDown, .rightMouseDown]
 		) { [weak self] _ in
-			guard let self, !Self.isInMenuBar(NSEvent.mouseLocation) else { return }
+			guard let self else { return }
+			// A click *inside* the menu bar is the user working with the revealed items — that
+			// renews the deadline rather than ending it.
+			guard !Self.isInMenuBar(NSEvent.mouseLocation) else {
+				self.startAutoCollapse()
+				return
+			}
 			self.collapse()
 		}
 	}
@@ -149,6 +157,30 @@ final class MenuBarController {
 	private func stopOutsideClickMonitor() {
 		if let outsideClickMonitor { NSEvent.removeMonitor(outsideClickMonitor) }
 		outsideClickMonitor = nil
+	}
+
+	// MARK: Auto-collapse
+
+	/// How long the bar stays revealed without interaction.
+	///
+	/// ponytail: fixed rather than configurable — it is one more setting for a difference almost
+	/// nobody wants to choose. Raise it here if practice says 15 s is too brisk.
+	private static let autoCollapseDelay: Duration = .seconds(15)
+
+	private var autoCollapse: Task<Void, Never>?
+
+	/// Starts the deadline over. Called on every reveal and on every click inside the menu bar, so
+	/// the timer measures inactivity, not the time since revealing.
+	///
+	/// A `Task` rather than a `Timer`: cancelling is exact, and ``collapse()`` refuses to run twice
+	/// anyway.
+	private func startAutoCollapse() {
+		autoCollapse?.cancel()
+		autoCollapse = Task { [weak self] in
+			try? await Task.sleep(for: Self.autoCollapseDelay)
+			guard !Task.isCancelled else { return }
+			self?.collapse()
+		}
 	}
 
 	/// `visibleFrame` ends at the top exactly below the menu bar — whatever is above it is the

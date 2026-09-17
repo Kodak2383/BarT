@@ -14,11 +14,13 @@ to be handed to a fresh session on its own.
 ### Ready — unblocked, startable now, in parallel
 | ID | Title | Mode |
 | --- | --- | --- |
-| [BT-01](issues/BT-01.md) | Ship the licences | 🤖 AFK |
 | [BT-03](issues/BT-03.md) | Accessibility permission: honest state, honest UI | 👤 HITL |
 | [BT-11](issues/BT-11.md) | Configurable shortcut | 👤 HITL |
-| [BT-12](issues/BT-12.md) | Auto-collapse after 15 seconds | 🤖 AFK* |
-| [BT-13](issues/BT-13.md) | Accessibility names for the two tabs | 🤖 AFK |
+
+### Blocked on a decision
+| ID | Title | Waiting for |
+| --- | --- | --- |
+| [BT-01](issues/BT-01.md) | Ship the licences | **Ice is GPL-3, not MIT.** Which licence BarT ships under is open — see below |
 
 ### Blocked
 | ID | Title | Mode | Waiting for |
@@ -37,7 +39,14 @@ to be handed to a fresh session on its own.
 _(empty)_
 
 ### Done
-_(empty)_
+| ID | Title | Verified by |
+| --- | --- | --- |
+| [BT-12](issues/BT-12.md) | Auto-collapse after 15 seconds | Icon `»` → hotkey → `«` → 16 s → `»`, captured from the live menu bar |
+
+### Dropped
+| ID | Title | Why |
+| --- | --- | --- |
+| [BT-13](issues/BT-13.md) | Accessibility names for the two tabs | The problem did not exist — `.tabItem` already sets `AXDescription`; measured on the unmodified build |
 
 ## Dependency graph
 
@@ -52,15 +61,13 @@ graph LR
   BT08 --> BT09[BT-09 Drag]
   BT07 --> BT10[BT-10 Error UI]
   BT11[BT-11 Shortcut]
-  BT12[BT-12 Auto-collapse]
-  BT13[BT-13 Tab names]
+  BT12[BT-12 Auto-collapse ✅]
   BT02 --> BT14[BT-14 Publish]
   BT05 --> BT14
   BT09 --> BT14
   BT10 --> BT14
   BT11 --> BT14
   BT12 --> BT14
-  BT13 --> BT14
 ```
 
 ## How this is cut
@@ -87,6 +94,6 @@ Two ordering rules that are not visible in the graph:
 
 ## Parallelism
 
-Five issues are startable right now. A sensible split: I take BT-01, BT-13 and BT-12 unattended
-while you are elsewhere; BT-03 and BT-11 wait for a window in which you can click a system dialog
-and press a few key combinations.
+BT-12 is done and BT-13 turned out to be a non-issue. BT-01 is held up by a licence question that
+only you can answer. That leaves **BT-03 and BT-11**, both 👤 HITL — they need a window in which you
+can click a system dialog and press a few key combinations.
