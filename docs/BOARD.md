@@ -16,7 +16,6 @@ it four issues. BarT ships free; the price question waits for the assertion engi
 ### Ready — unblocked, startable now
 | ID | Title | Mode |
 | --- | --- | --- |
-| [BT-11](issues/BT-11.md) | Configurable shortcut | 👤 HITL |
 | [BT-02](issues/BT-02.md) | README for a public audience | 🤖 AFK |
 
 ### Blocked
@@ -35,6 +34,7 @@ it four issues. BarT ships free; the price question waits for the assertion engi
 | [BT-07](issues/BT-07.md) | The section grid, read-only | Three grids on the live bar at the window minimum; twenty-one AXImage elements read back with their names |
 | [BT-04](issues/BT-04.md) | Welcome window on first launch | Deleted the defaults domain: the window comes on the next launch, not the one after, and the menu brings it back |
 | [BT-16](issues/BT-16.md) | Teach the ⌘-drag | Read back by the maintainer; the first real ⌘-drag landed the item in Hidden, icon and all |
+| [BT-11](issues/BT-11.md) | Configurable shortcut | Recorded live: the new combination worked from another app at once, ⌘Space and a bare key were refused by name, the old shortcut survived both refusals |
 
 ### Dropped
 | ID | Title | Why |
@@ -58,7 +58,7 @@ graph LR
   BT06 --> BT07[BT-07 Grid, read-only ✅]
   BT07 --> BT02[BT-02 README]
   BT16 --> BT02
-  BT11[BT-11 Shortcut]
+  BT11[BT-11 Shortcut ✅]
   BT01[BT-01 Licences ✅] --> BT02
   BT02 --> BT14[BT-14 Publish]
   BT07 --> BT14
@@ -84,14 +84,16 @@ unknown (a new permission, an unproven API, unknown cost) first rather than last
 
 ## Parallelism
 
-Two issues are left before publishing: [BT-11](issues/BT-11.md) (the shortcut is still hard-wired,
-👤 HITL) and [BT-02](issues/BT-02.md) (the README, 🤖 AFK). They do not touch each other. After
-them only [BT-14](issues/BT-14.md) remains, and that one needs a person for every step anyway.
+One issue is left before publishing: [BT-02](issues/BT-02.md), the README, 🤖 AFK. After it only
+[BT-14](issues/BT-14.md) remains, and that one needs a person for every step anyway.
 
 BT-16 corrected the README's worst falsehoods on the way through — simulated ⌘-drags, an
 accessibility permission, an assignment in `UserDefaults`, all gone since BT-15. What BT-02 still
-owns is the structure and the stranger's path from "downloaded a zip" to "working app".
+owns is the structure and the stranger's path from "downloaded a zip" to "working app". The
+shortcut is now something the reader can change, so it is a setting to describe rather than a
+constant to quote.
 
-One question BT-14 has to answer and nobody has: the licence sections still credit Ice for a drag
-technique BT-15 deleted. Whether BarT is still a derivative work decides whether it stays GPL-3.0
-(PRD §7).
+One question BT-02 walks straight into and nobody has answered: the licence sections still credit
+Ice for a drag technique BT-15 deleted. Whether BarT is still a derivative work decides whether it
+stays GPL-3.0 (PRD §7). The same stale claim sits in `BarT.entitlements`, where the disabled
+sandbox is still justified with an accessibility API the app no longer touches.

@@ -35,8 +35,19 @@ final class MenuBarController {
 
 	private var hotKey: GlobalHotKey?
 
-	/// `false` when ``GlobalHotKey/displayName`` is already taken by another app.
+	/// `false` when the registered combination is already taken by another app.
 	private(set) var isHotKeyRegistered = false
+
+	/// Swaps the reveal shortcut for a new one, live — the settings recorder's only way in.
+	///
+	/// - Returns: `nil` on success, otherwise one sentence for the user. On a refusal the
+	///   previous combination is still registered, so there is never a moment without one.
+	func setHotKey(_ combination: GlobalHotKey.Combination) -> String? {
+		guard let hotKey else { return "The shortcut is not ready yet." }
+		let failure = hotKey.register(combination)
+		isHotKeyRegistered = hotKey.isRegistered
+		return failure
+	}
 
 	/// BarT's own menu bar windows (icon, both separators) — these must never show up in the
 	/// list. The separators come from the engine, the status icon registers itself from outside
@@ -217,6 +228,7 @@ final class MenuBarController {
 		await engine.runSeparatorSelfTest()
 		MenuBarItemID.runDisplayNameSelfTest()
 		await icons.runIconSelfTest()
+		GlobalHotKey.runShortcutSelfTest()
 		print(
 			"[BarT] Hotkey \(GlobalHotKey.displayName): "
 				+ (isHotKeyRegistered ? "registered" : "FAILED — already taken")

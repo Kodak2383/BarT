@@ -1,4 +1,5 @@
 import AppKit
+import Carbon.HIToolbox
 import SwiftUI
 
 struct SettingsView: View {
@@ -72,13 +73,7 @@ private struct GeneralSettingsTab: View {
 
 			Section("Revealing hidden items") {
 				LabeledContent("Keyboard shortcut") {
-					if controller.isHotKeyRegistered {
-						Text(GlobalHotKey.displayName)
-							.monospaced()
-					} else {
-						Text("\(GlobalHotKey.displayName) — already taken")
-							.foregroundStyle(.red)
-					}
+					ShortcutRecorder(controller: controller)
 				}
 				LabeledContent("Click the menu bar icon") {
 					VStack(alignment: .leading, spacing: 2) {
@@ -308,6 +303,86 @@ private struct ItemsSettingsTab: View {
 		}
 	}
 
+}
+
+/// Click, press a combination, done (BT-11).
+///
+/// The keystrokes are read with a *local* event monitor: it sees only what is aimed at this
+/// window — the one the user just clicked — and swallows it. A global monitor would want the
+/// accessibility permission BT-15 got rid of, for a field that is live for two seconds. BarT
+/// installs no main menu, so there are no key equivalents to race against either.
+private struct ShortcutRecorder: View {
+	let controller: MenuBarController
+
+	@State private var combination = GlobalHotKey.current
+	@State private var isRecording = false
+	@State private var monitor: Any?
+	@State private var message: String?
+
+	var body: some View {
+		VStack(alignment: .trailing, spacing: 4) {
+			HStack(spacing: 8) {
+				if combination != GlobalHotKey.defaultCombination {
+					Button("Reset") { apply(GlobalHotKey.defaultCombination) }
+				}
+				Button(isRecording ? "Press a combination…" : combination.displayName) {
+					if isRecording { stopRecording() } else { startRecording() }
+				}
+				.monospaced(!isRecording)
+				.frame(minWidth: 130)
+			}
+			Group {
+				if let message {
+					// The refusal, in the user's words — and the old shortcut still works.
+					Text(message)
+						.foregroundStyle(.red)
+				} else if isRecording {
+					Text("⎋ cancels.")
+						.foregroundStyle(.secondary)
+				} else if !controller.isHotKeyRegistered {
+					Text("Not registered — another app is holding it.")
+						.foregroundStyle(.red)
+				}
+			}
+			.font(.caption)
+			.multilineTextAlignment(.trailing)
+			.fixedSize(horizontal: false, vertical: true)
+		}
+		// A recorder left listening would swallow the next keystroke in the whole app.
+		.onDisappear(perform: stopRecording)
+	}
+
+	private func startRecording() {
+		message = nil
+		isRecording = true
+		monitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+			MainActor.assumeIsolated {
+				if event.keyCode == UInt16(kVK_Escape) {
+					stopRecording()
+				} else {
+					stopRecording()
+					apply(GlobalHotKey.combination(from: event))
+				}
+			}
+			// Swallowed either way: while recording, a keystroke belongs to the recorder.
+			return nil
+		}
+	}
+
+	private func apply(_ candidate: GlobalHotKey.Combination) {
+		if let failure = controller.setHotKey(candidate) {
+			message = failure
+		} else {
+			combination = candidate
+			message = nil
+		}
+	}
+
+	private func stopRecording() {
+		isRecording = false
+		if let monitor { NSEvent.removeMonitor(monitor) }
+		monitor = nil
+	}
 }
 
 #Preview {
