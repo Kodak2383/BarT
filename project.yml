@@ -1,6 +1,6 @@
 name: BarT
 options:
-  # This key MUST live under `options` — at the top level xcodegen ignores it silently,
+  # This key MUST live under `options`. At the top level xcodegen ignores it silently,
   # PRODUCT_BUNDLE_IDENTIFIER stays empty, and the app runs with no bundle ID at all:
   # UserDefaults then falls back to the process name, and SMAppService ("Launch at login")
   # has nothing to tie the app to.
