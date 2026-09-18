@@ -1,98 +1,156 @@
 # BarT
 
-A Bartender clone for macOS — a menu bar management app. Items you rarely need sit out of sight and come back for a moment when you click BarT's own icon.
+Your menu bar, as long or as short as you want it. Items you rarely need sit out of sight and come
+back for a moment when you click BarT's icon.
 
-Tested on macOS 26. Finding the menu bar's windows relies on private CGS calls, so BarT is tied to the behaviour of that OS version.
+<!-- Screenshot goes here with the 1.0 release — see docs/issues/BT-14.md. -->
 
-## Requirements
+## What it does
 
-**Important:** you need the full Xcode IDE, not just the Command Line Tools.
+BarT splits the menu bar into three areas and keeps two of them out of sight:
 
-Check whether Xcode is installed:
+```
+[ Always hidden ]  ‹  [ Hidden ]  ‹  [ Visible ]  «BarT»
+```
+
+- **Visible** — always in the bar.
+- **Hidden** — comes back for a moment when you click BarT's icon or press the shortcut.
+- **Always hidden** — stays away even then; only an ⌥-click brings it out.
+
+Which item goes where is your own ⌘-drag in the menu bar (see below). **BarT never moves an item
+itself**, and it stores nothing about your arrangement — macOS already remembers it.
+
+## Will it run here?
+
+- **macOS 26.** BarT finds the menu bar's windows through private CoreGraphics calls, which are
+  not API and change without notice. It is tested on macOS 26 and pinned to how that version
+  behaves. A major system update can break it; that is the deal these calls come with.
+- **Your main screen.** Items on a second display are not managed.
+
+## Installing
+
+BarT is **not signed and not notarised**: there is no Apple developer certificate behind it, so
+macOS treats it as software from an unidentified developer.
+
+1. Download the zip from the latest release and unpack it.
+2. Move **BarT.app** to your **Applications** folder.
+3. **Right-click** the app and choose **Open**, then **Open** again in the dialog. Double-clicking
+   the first time only offers you a Cancel button.
+
+If macOS blocks it anyway: **System Settings › Privacy & Security**, scroll to the bottom, and
+click **Open Anyway** next to the message about BarT.
+
+BarT has no window of its own. Once it runs, its icon is in the menu bar — the welcome window on
+first launch explains the rest.
+
+## What BarT asks for
+
+**One permission: screen recording.** macOS hands out neither the icon nor the real name of
+another app's menu bar item without it, and those are what the Items tab shows you. BarT asks the
+first time you open that tab, never at launch, and it works without it — the Items tab just falls
+back to names like "Control Center" for everything.
+
+It records nothing, and BarT makes **no network requests of any kind**: no telemetry, no update
+check, no analytics. There is no networking code in it at all.
+
+**After every update you have to allow it again.** Because BarT is unsigned, macOS ties the grant
+to that exact build and treats the next version as a different app. This is not a bug and there is
+no way around it short of signing.
+
+It needs **no accessibility permission**. An earlier version did; that machinery is gone.
+
+## Using it
+
+- **Left click** the BarT icon reveals the hidden items; another click hides them again.
+  "Always hidden" stays away — that is what the section is for.
+- **⌥-click** additionally reveals "Always hidden".
+- **⌃⌥⌘B** does the same as a left click, system-wide. It is configurable in
+  **Settings › General**: click the field, press the combination you want. BarT turns down
+  anything macOS has already claimed (⌘Space, for instance) and anything without ⌃, ⌥ or ⌘ — the
+  shortcut you had keeps working until a new one is accepted.
+- A click **outside** the menu bar collapses it again. Clicks *inside* the bar do not, otherwise
+  the item you just clicked would be pulled out from under the cursor. Left alone it collapses by
+  itself after 15 seconds.
+- **Right click** opens the menu: about, the welcome window, settings, quit.
+
+## Arranging items: ⌘-drag
+
+Deciding what is hidden is a gesture macOS has always offered and almost nobody knows:
+
+> Hold **⌘** and drag an item along the menu bar.
+
+What you drag it *past* is the point. BarT's two areas are marked by two status items of its own,
+which show up as small `‹` markers — the separators.
+
+- Drag an item **left** past the first `‹` and it is hidden; past the second one as well and it
+  stays away even when you reveal.
+- Drag it **right** again to bring it back.
+- The separators are only on screen **while the hidden items are revealed** — click BarT's icon
+  first, then ⌘-drag. A plain click brings out the first `‹`; ⌥-click brings out the second one
+  as well.
+- The **Items** tab in the settings shows where everything currently sits, with the items' real
+  icons. It is a picture, not a control: nothing in it can be moved.
+
+## What it cannot do
+
+- **Move items for you.** Arranging is the ⌘-drag above, once, by hand.
+- **Touch items macOS pins itself** — the clock and Control Center cannot be dragged at all. That
+  is a system rule, not a BarT limitation.
+- **Manage a second display.** Main screen only.
+- **Survive every system update.** The private calls BarT reads the menu bar with are
+  undocumented; a macOS update may change or remove them, and then BarT stops working until it is
+  fixed.
+
+## Building from source
+
+You need the full **Xcode**, not just the Command Line Tools. Check with:
+
 ```bash
 xcode-select -p
 ```
 
-This should print `/Applications/Xcode.app/Contents/Developer`. If it does not (because only the Command Line Tools are installed, say), install Xcode from the App Store and run:
+That should print `/Applications/Xcode.app/Contents/Developer`. If it does not, install Xcode from
+the App Store and run:
+
 ```bash
 sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
 ```
 
-Also required:
-- **xcodegen** (to turn `project.yml` into an Xcode project): `brew install xcodegen`
-
-## Building
+`project.yml` is the source of truth for the Xcode project, so **xcodegen** is needed as well
+(`brew install xcodegen`):
 
 ```bash
 xcodegen generate
 open BarT.xcodeproj
 ```
 
-In Xcode: `Product` → `Build`, or `Cmd+B`.
+Then `Product › Build` in Xcode, or `⌘B`.
 
-## Security & sandboxing
+`BarT.entitlements` disables the App Sandbox on purpose: a sandboxed app cannot read the menu
+bar's window list through the private CGS calls BarT is built on.
 
-`BarT.entitlements` disables the App Sandbox (`com.apple.security.app-sandbox = false`). A sandboxed app cannot read the menu bar's window list through the private CGS calls BarT is built on.
-
-## Usage
-
-- **Left click** on the BarT icon temporarily reveals the hidden items; another click hides them again. Items in “Always hidden” stay away — that is exactly what the section is for.
-- **⌥-click** additionally reveals “Always hidden”.
-- **⌃⌥⌘B** does the same as a left click, system-wide.
-- A click anywhere outside the menu bar collapses it again. Clicks *inside* the menu bar do not — otherwise the item you just clicked would be pulled out from under the cursor. Without any interaction it collapses by itself after 15 seconds.
-- **Right click** opens the menu (about, the welcome window, settings, quit). Holding **⌥** while the menu opens reveals the debug tools.
-
-## Arranging items: ⌘-drag
-
-**BarT never moves an item.** Deciding what is hidden is a gesture macOS has always offered and almost nobody knows:
-
-> Hold **⌘** and drag an item along the menu bar.
-
-What you drag it *past* is the point. BarT splits the bar into three areas with two status items of its own, which show up as small `‹` markers — the separators:
-
-```
-[ Always hidden ]  ‹  [ Hidden ]  ‹  [ Visible ]  «BarT»
-```
-
-- Drag an item **left** past the first `‹` and it is hidden; past the second one as well and it stays away even when you reveal.
-- Drag it **right** again to bring it back.
-- The separators are only on screen **while the hidden items are revealed** — click BarT's icon first, then ⌘-drag. A plain click brings out the first `‹`; ⌥-click brings out the second one as well.
-- macOS remembers the arrangement itself. BarT stores nothing: the **Items** tab in the settings shows where things currently sit, as the items' real icons, and cannot change any of it.
-
-Items macOS pins itself — the clock, Control Center — cannot be dragged at all. That is a macOS rule, not a BarT limitation.
-
-## Permissions
-
-BarT needs **no accessibility permission**. The one permission it asks for is **screen recording**, and only to read the icons and titles of your menu bar items for the Items tab — macOS hands out neither without it. BarT makes no network requests and records nothing.
-
-It is asked for the first time you open the Items tab, never at launch. Because BarT is unsigned, macOS ties the grant to that exact build: **after every update you have to allow it again.**
-
-## Current status
-
-Working:
-
-- Enumeration of every menu bar item through the CGS window list
-- All three sections, and the items' real icons in the settings, captured with ScreenCaptureKit
-- Revealing by click, ⌥-click and global hotkey; collapsing beside the bar or after 15 seconds
-- Launch at login
-
-Still open:
-
-- The hotkey is hard-wired (⌃⌥⌘B); on a collision the settings say so, but it cannot be changed yet
-- Main screen only
-
-Behind the ⌥-only debug menu item “Run self-tests” sit the checks that are only possible on a running system: the separator order (macOS has to place a new status item to the left of the existing ones — the entire section assignment rests on that), the display-name cleanup, the icon capture, and the hotkey registration. All of them also run without the menu:
+`scripts/gates.sh` is the one command that checks a change — it builds, runs the self-tests,
+checks the two style rules, and runs the issue's own verification script if it has one. The
+self-tests are the checks that only work on a running system (the separator order, the name
+cleanup, the icon capture, the shortcut registration) and also run on their own:
 
 ```bash
 BART_SELF_TEST=1 "$(ls -d ~/Library/Developer/Xcode/DerivedData/BarT-*/Build/Products/Debug/BarT.app)/Contents/MacOS/BarT"
 ```
+
+The same checks sit behind the ⌥-only "Run self-tests" item in the right-click menu.
 
 ## Licence
 
 BarT is free software under the **GPL-3.0** — see [LICENSE](LICENSE).
 Copyright © 2026 André Duhme.
 
-That is not a free choice: BarT contains code from [Ice](https://github.com/jordanbaird/Ice)
-(GPL-3.0) by Jordan Baird, which makes BarT a derivative work. Every location is listed in
-[THIRD-PARTY-LICENSES.md](THIRD-PARTY-LICENSES.md) and marked in the source. The drag technique
-itself (`scromble`, the windowID fields in `CGEvent`) is the most substantial part of it.
+BarT used to contain code from [Ice](https://github.com/jordanbaird/Ice) (GPL-3.0) by Jordan
+Baird, which made it a derivative work. That code — the simulated ⌘-drag that moved items
+automatically — was removed entirely. What is left of the connection is a set of private
+CoreGraphics function *signatures* whose correctness was verified against Ice's, and which are
+marked as such in the source.
+
+**BarT stays under GPL-3.0 regardless.** Changing a licence is a deliberate act, not a side effect
+of a deletion. [THIRD-PARTY-LICENSES.md](THIRD-PARTY-LICENSES.md) sets out what was removed, what
+remains and why that decision is still open.

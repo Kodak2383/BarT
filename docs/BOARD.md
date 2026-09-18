@@ -16,12 +16,10 @@ it four issues. BarT ships free; the price question waits for the assertion engi
 ### Ready — unblocked, startable now
 | ID | Title | Mode |
 | --- | --- | --- |
-| [BT-02](issues/BT-02.md) | README for a public audience | 🤖 AFK |
+| [BT-14](issues/BT-14.md) | Publish 1.0 | 👤 HITL |
 
 ### Blocked
-| ID | Title | Mode | Waiting for |
-| --- | --- | --- | --- |
-| [BT-14](issues/BT-14.md) | Publish 1.0 | 👤 HITL | everything |
+Nothing.
 
 ### Done
 | ID | Title | Verified by |
@@ -35,6 +33,7 @@ it four issues. BarT ships free; the price question waits for the assertion engi
 | [BT-04](issues/BT-04.md) | Welcome window on first launch | Deleted the defaults domain: the window comes on the next launch, not the one after, and the menu brings it back |
 | [BT-16](issues/BT-16.md) | Teach the ⌘-drag | Read back by the maintainer; the first real ⌘-drag landed the item in Hidden, icon and all |
 | [BT-11](issues/BT-11.md) | Configurable shortcut | Recorded live: the new combination worked from another app at once, ⌘Space and a bare key were refused by name, the old shortcut survived both refusals |
+| [BT-02](issues/BT-02.md) | README for a public audience | Every "Done when" item covered in order; the no-network claim verified by grep, two claims that could not be verified cut |
 
 ### Dropped
 | ID | Title | Why |
@@ -56,10 +55,10 @@ graph LR
   BT03 --> BT06[BT-06 Icons tracer ✅]
   BT15 --> BT06
   BT06 --> BT07[BT-07 Grid, read-only ✅]
-  BT07 --> BT02[BT-02 README]
-  BT16 --> BT02
+  BT07 --> BT02[BT-02 README ✅]
+  BT16 --> BT02[BT-02 README ✅]
   BT11[BT-11 Shortcut ✅]
-  BT01[BT-01 Licences ✅] --> BT02
+  BT01[BT-01 Licences ✅] --> BT02[BT-02 README ✅]
   BT02 --> BT14[BT-14 Publish]
   BT07 --> BT14
   BT16 --> BT14
@@ -84,16 +83,21 @@ unknown (a new permission, an unproven API, unknown cost) first rather than last
 
 ## Parallelism
 
-One issue is left before publishing: [BT-02](issues/BT-02.md), the README, 🤖 AFK. After it only
-[BT-14](issues/BT-14.md) remains, and that one needs a person for every step anyway.
+None left. [BT-14](issues/BT-14.md) is the only open issue and every step of it needs a person:
+your GitHub account for the remote and the release, and a machine that is not this one for the
+only test that matters — a stranger downloading a zip and reaching a working BarT without asking
+anyone. A clean user account on this Mac is the cheap version of that second machine.
 
-BT-16 corrected the README's worst falsehoods on the way through — simulated ⌘-drags, an
-accessibility permission, an assignment in `UserDefaults`, all gone since BT-15. What BT-02 still
-owns is the structure and the stranger's path from "downloaded a zip" to "working app". The
-shortcut is now something the reader can change, so it is a setting to describe rather than a
-constant to quote.
+Two holes in the README are BT-14's to fill: the screenshot placeholder and the release link the
+install section points at.
 
-One question BT-02 walks straight into and nobody has answered: the licence sections still credit
-Ice for a drag technique BT-15 deleted. Whether BarT is still a derivative work decides whether it
-stays GPL-3.0 (PRD §7). The same stale claim sits in `BarT.entitlements`, where the disabled
-sandbox is still justified with an accessibility API the app no longer touches.
+The licence question is no longer open in the way it was. `THIRD-PARTY-LICENSES.md` already
+decides it — GPL-3.0 stays, because a licence change is a deliberate act and not a side effect of
+BT-15's deletion — and the README now says the same thing. What is still worth one look before the
+repo goes public is whether the six remaining CGS declarations really are facts about Apple's
+interface rather than authored code. The About panel's "contains code from Ice" is the cautious
+claim consistent with staying GPL-3.0, so it is safe to publish as it stands.
+
+One smaller inaccuracy left in the source: `BarT.entitlements` still justifies the disabled sandbox
+with the accessibility API BT-15 removed. The real reason is the private CGS calls, which the
+README now states correctly.
