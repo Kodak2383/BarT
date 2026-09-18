@@ -14,9 +14,9 @@ it four issues. BarT ships free; the price question waits for the assertion engi
 ## Columns
 
 ### Ready — unblocked, startable now
-| ID | Title | Mode |
-| --- | --- | --- |
-| [BT-14](issues/BT-14.md) | Publish 1.0 | 👤 HITL |
+| ID | Title | Mode | Note |
+| --- | --- | --- | --- |
+| [BT-14](issues/BT-14.md) | Publish 1.0 | 👤 HITL | *published; only the clean-account install is left* |
 
 ### Blocked
 Nothing.
@@ -59,7 +59,7 @@ graph LR
   BT16 --> BT02[BT-02 README ✅]
   BT11[BT-11 Shortcut ✅]
   BT01[BT-01 Licences ✅] --> BT02[BT-02 README ✅]
-  BT02 --> BT14[BT-14 Publish]
+  BT02 --> BT14[BT-14 Publish — shipped, install untested]
   BT07 --> BT14
   BT16 --> BT14
   BT11 --> BT14
@@ -83,22 +83,14 @@ unknown (a new permission, an unproven API, unknown cost) first rather than last
 
 ## Parallelism
 
-None left. [BT-14](issues/BT-14.md) is the only open issue and every step of it needs a person:
-your GitHub account for the remote and the release, and a machine that is not this one for the
-only test that matters — a stranger downloading a zip and reaching a working BarT without asking
-anyone. A clean user account on this Mac is the cheap version of that second machine.
+Nothing runs in parallel any more. BarT 1.0.0 is public at
+<https://github.com/Kodak2383/BarT/releases/tag/v1.0.0>, CI is green on `macos-26`, and the
+published zip was downloaded, unpacked and run to prove it is not a corrupt artefact.
 
-Two holes in the README are BT-14's to fill: the screenshot placeholder and the release link the
-install section points at.
+One thing in [BT-14](issues/BT-14.md) is still open and cannot be closed from here: **a stranger's
+install.** A `curl` download carries no quarantine attribute, so the Gatekeeper instructions in the
+README — right-click → Open, then Privacy & Security → Open Anyway — have never actually been
+walked. Neither has the screen recording prompt on a Mac that has not already answered it.
 
-The licence question is settled as far as it can be settled here (2026-09-18). Every remaining
-trace of Ice was checked one declaration at a time: five of the six private CGS signatures are
-the public CGSInternal header verbatim, the sixth has Ice as its only traceable source, and the
-symbol behind it is Apple's own — read out of CoreGraphics with `dyld_info`. GPL-3.0 stays, which
-makes the question moot at no cost, and the three places that said so now say only what is
-demonstrable: the about panel carries the licence and nothing else, `Bridging.swift` names the one
-declaration that needs naming, and `THIRD-PARTY-LICENSES.md` writes the whole check out.
-
-One smaller inaccuracy left in the source: `BarT.entitlements` still justifies the disabled sandbox
-with the accessibility API BT-15 removed. The real reason is the private CGS calls, which the
-README now states correctly.
+A fresh user account on this machine is the cheap version of that test. Whatever step it turns up
+as missing belongs in the README before anyone else is pointed at the link.
