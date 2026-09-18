@@ -3,15 +3,23 @@
 Your menu bar, as long or as short as you want it. Items you rarely need sit out of sight and come
 back for a moment when you click BarT's icon.
 
-<!-- Screenshot goes here with the 1.0 release — see docs/issues/BT-14.md. -->
+![The menu bar with BarT collapsed: a handful of icons, then the clock.](docs/images/menubar-collapsed.png)
+
+![The same menu bar revealed: five more items and a butterfly appear to the left, each group marked off by a small ‹ separator.](docs/images/menubar-revealed.png)
+
+The same menu bar, before and after one click on BarT's icon.
 
 ## What it does
 
 BarT splits the menu bar into three areas and keeps two of them out of sight:
 
 ```
-[ Always hidden ]  ‹  [ Hidden ]  ‹  [ Visible ]  «BarT»
+[ Always hidden ]  ‹  [ Hidden ]  ‹  [ Visible ]
 ```
+
+BarT's own icon sits somewhere inside the visible group — macOS decides where, and anything that
+was in the bar before BarT stays to its right. It shows `»` while things are hidden and `«` while
+they are out.
 
 - **Visible** — always in the bar.
 - **Hidden** — comes back for a moment when you click BarT's icon or press the shortcut.
@@ -90,6 +98,11 @@ which show up as small `‹` markers — the separators.
   as well.
 - The **Items** tab in the settings shows where everything currently sits, with the items' real
   icons. It is a picture, not a control: nothing in it can be moved.
+
+![BarT's settings, Items tab: three labelled grids — Visible, Hidden and Always hidden — each filled with the real icons of the menu bar items in it.](docs/images/items-tab.png)
+
+The hidden sections stay empty of icons until you have revealed them once: macOS cannot photograph
+a window that is not on screen, so BarT takes the picture while the items are out and keeps it.
 
 ## What it cannot do
 
