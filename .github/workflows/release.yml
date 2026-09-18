@@ -1,0 +1,32 @@
+name: Release
+
+on:
+  push:
+    tags: [ 'v*' ]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: macos-26
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install xcodegen
+      run: brew install xcodegen
+
+    - name: Build and zip
+      # The same script that is run by hand before tagging, so the artefact tested on a clean
+      # account is the one that ships.
+      run: zsh scripts/release.sh
+
+    - name: Publish
+      # `gh` is preinstalled on the runner — no third-party action for a one-line job.
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        gh release create "${GITHUB_REF_NAME}" dist/BarT-*.zip \
+          --title "BarT ${GITHUB_REF_NAME}" \
+          --notes-file docs/RELEASE-NOTES.md

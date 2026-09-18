@@ -8,24 +8,43 @@ on:
 
 jobs:
   build:
-    runs-on: macos-15
-    # Note: the deployment target is macOS 26, so this runner's SDK may be too old.
-    # If the build fails on the SDK, switch to a macos-26 runner once one is available.
+    # macOS 26 with Xcode 26.6 — the deployment target is 26.0, so an older image cannot
+    # build this at all. Checked against actions/runner-images on 2026-09-18.
+    runs-on: macos-26
 
     steps:
     - uses: actions/checkout@v4
 
     - name: Install xcodegen
-      run: |
-        brew install xcodegen
+      run: brew install xcodegen
 
     - name: Generate Xcode project
+      # project.yml is the source of truth; the .xcodeproj is generated and not in the repo.
       run: xcodegen generate
 
-    - name: Build
+    - name: Build (Debug)
       run: |
         xcodebuild build \
-          -project "BarT.xcodeproj" \
-          -scheme "BarT" \
+          -project BarT.xcodeproj \
+          -scheme BarT \
           -configuration Debug \
           -destination "platform=macOS"
+
+    - name: Build (Release)
+      # What a download actually gets. A Debug-only CI would let a Release-only break through.
+      run: |
+        xcodebuild build \
+          -project BarT.xcodeproj \
+          -scheme BarT \
+          -configuration Release \
+          -destination "platform=macOS"
+
+    - name: Style
+      # The same two rules scripts/gates.sh enforces. The self-tests it also runs are left out
+      # on purpose: they need a real menu bar and a screen recording grant, neither of which a
+      # runner has, so a green tick here would mean less than it looks.
+      run: |
+        BAD_INDENT=$(grep -rln '^    [^ ]' --include="*.swift" BarT || true)
+        if [ -n "$BAD_INDENT" ]; then echo "space indentation in:"; echo "$BAD_INDENT"; exit 1; fi
+        BAD_LICENCE=$(grep -rn 'MIT' --include="*.swift" BarT || true)
+        if [ -n "$BAD_LICENCE" ]; then echo "BarT and Ice are GPL-3.0, not MIT:"; echo "$BAD_LICENCE"; exit 1; fi

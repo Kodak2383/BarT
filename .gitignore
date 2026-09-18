@@ -1,4 +1,6 @@
 # Xcode
+build/
+dist/
 .build/
 *.xcodeproj/
 DerivedData/

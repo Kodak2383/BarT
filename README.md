@@ -34,13 +34,15 @@ itself**, and it stores nothing about your arrangement — macOS already remembe
   not API and change without notice. It is tested on macOS 26 and pinned to how that version
   behaves. A major system update can break it; that is the deal these calls come with.
 - **Your main screen.** Items on a second display are not managed.
+- **Apple Silicon.** The release build is arm64 only — checked with `lipo -archs`. On an Intel Mac
+  running macOS 26, build from source.
 
 ## Installing
 
 BarT is **not signed and not notarised**: there is no Apple developer certificate behind it, so
 macOS treats it as software from an unidentified developer.
 
-1. Download the zip from the latest release and unpack it.
+1. Download `BarT-1.0.0.zip` from the latest release and unpack it.
 2. Move **BarT.app** to your **Applications** folder.
 3. **Right-click** the app and choose **Open**, then **Open** again in the dialog. Double-clicking
    the first time only offers you a Cancel button.
