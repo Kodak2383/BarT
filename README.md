@@ -146,11 +146,9 @@ BarT is free software under the **GPL-3.0** — see [LICENSE](LICENSE).
 Copyright © 2026 André Duhme.
 
 BarT used to contain code from [Ice](https://github.com/jordanbaird/Ice) (GPL-3.0) by Jordan
-Baird, which made it a derivative work. That code — the simulated ⌘-drag that moved items
-automatically — was removed entirely. What is left of the connection is a set of private
-CoreGraphics function *signatures* whose correctness was verified against Ice's, and which are
-marked as such in the source.
+Baird — the simulated ⌘-drag that moved items automatically. That code was removed entirely. What
+is left is six declarations of Apple's own private CoreGraphics interface, five of which come
+from a public header archive that has nothing to do with Ice.
+[THIRD-PARTY-LICENSES.md](THIRD-PARTY-LICENSES.md) goes through them one at a time.
 
-**BarT stays under GPL-3.0 regardless.** Changing a licence is a deliberate act, not a side effect
-of a deletion. [THIRD-PARTY-LICENSES.md](THIRD-PARTY-LICENSES.md) sets out what was removed, what
-remains and why that decision is still open.
+GPL-3.0 stays regardless: changing a licence is a deliberate act, not a side effect of a deletion.

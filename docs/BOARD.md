@@ -91,12 +91,13 @@ anyone. A clean user account on this Mac is the cheap version of that second mac
 Two holes in the README are BT-14's to fill: the screenshot placeholder and the release link the
 install section points at.
 
-The licence question is no longer open in the way it was. `THIRD-PARTY-LICENSES.md` already
-decides it — GPL-3.0 stays, because a licence change is a deliberate act and not a side effect of
-BT-15's deletion — and the README now says the same thing. What is still worth one look before the
-repo goes public is whether the six remaining CGS declarations really are facts about Apple's
-interface rather than authored code. The About panel's "contains code from Ice" is the cautious
-claim consistent with staying GPL-3.0, so it is safe to publish as it stands.
+The licence question is settled as far as it can be settled here (2026-09-18). Every remaining
+trace of Ice was checked one declaration at a time: five of the six private CGS signatures are
+the public CGSInternal header verbatim, the sixth has Ice as its only traceable source, and the
+symbol behind it is Apple's own — read out of CoreGraphics with `dyld_info`. GPL-3.0 stays, which
+makes the question moot at no cost, and the three places that said so now say only what is
+demonstrable: the about panel carries the licence and nothing else, `Bridging.swift` names the one
+declaration that needs naming, and `THIRD-PARTY-LICENSES.md` writes the whole check out.
 
 One smaller inaccuracy left in the source: `BarT.entitlements` still justifies the disabled sandbox
 with the accessibility API BT-15 removed. The real reason is the private CGS calls, which the

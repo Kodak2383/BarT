@@ -5,10 +5,16 @@ import OSLog
 
 // Private CoreGraphics Services API (CGS).
 //
-// Provenance: signatures verified one to one against the open source project "Ice" (GPL-3.0),
-// file Ice/Bridging/Shims/Private.swift, commit 11edd39115f3f43a83ae114b5348df6a0e1741cf
-// (https://github.com/jordanbaird/Ice). Not guessed — wrong signatures cause silent memory
-// corruption here, not compiler errors.
+// Provenance. Five of the six signatures are the public CGSInternal header archive verbatim
+// (https://github.com/NUIKit/CGSInternal, CGSConnection.h and CGSWindow.h), down to the
+// parameter names. CGSGetProcessMenuBarWindowList is in no public header: its signature was
+// taken from Ice (GPL-3.0, Ice/Bridging/Shims/Private.swift, commit
+// 11edd39115f3f43a83ae114b5348df6a0e1741cf) and mirrors its sibling CGSGetOnScreenWindowList
+// parameter for parameter. The symbol itself is Apple's — CoreGraphics re-exports it from
+// SkyLight, checked with `dyld_info -exports`.
+//
+// None of this is guessed, and that is the point: a wrong signature here causes silent memory
+// corruption, not a compiler error.
 //
 // @_silgen_name binds straight against the C symbol in CoreGraphics.framework. There is no
 // header and no deprecation warning: if Apple removes a symbol, the dyld bind fails at app
