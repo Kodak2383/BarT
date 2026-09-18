@@ -5,7 +5,7 @@ import CoreGraphics
 /// measured 2026-09-17, macOS withholds `kCGWindowName` without it, so every menu bar item
 /// reports its hosting process and the items view reads "Control Center" twenty-one times.
 ///
-/// BarT is unsigned, so TCC ties the grant to a signature that changes on every rebuild —
+/// BarT is unsigned, so TCC ties the grant to a signature that changes on every rebuild, so
 /// the state has to be read fresh, never cached across an app activation.
 enum ScreenRecordingPermission {
 	static var isGranted: Bool { CGPreflightScreenCaptureAccess() }

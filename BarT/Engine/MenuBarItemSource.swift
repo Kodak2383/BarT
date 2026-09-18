@@ -3,12 +3,12 @@ import CoreGraphics
 
 /// Enumerates every menu bar item of every running app.
 ///
-/// Read-only — this class changes nothing about the menu bar.
+/// Read-only: this class changes nothing about the menu bar.
 @MainActor
 final class MenuBarItemSource: NSObject {
 	private(set) var items: [MenuBarItem] = []
 
-	/// Returns the window IDs that must never show up as items — BarT's own status items
+	/// Returns the window IDs that must never show up as items: BarT's own status items
 	/// (icon, separators).
 	///
 	/// Deliberately a closure instead of a set: the separators come into existence a moment
@@ -22,7 +22,7 @@ final class MenuBarItemSource: NSObject {
 	private var pollTask: Task<Void, Never>?
 
 	/// CGS reports no changes; there is no notification for "item added". Hence polling as the
-	/// baseline — the workspace notifications are only a latency improvement for the most
+	/// baseline; the workspace notifications are only a latency improvement for the most
 	/// common case (an app launching or quitting).
 	private let pollInterval: Duration = .seconds(2)
 
@@ -97,7 +97,7 @@ final class MenuBarItemSource: NSObject {
 
 		// `CGWindowListCreateDescriptionFromArray` verifiably returns an empty list for menu
 		// bar windows. So fetch the full window list instead and intersect it with the CGS
-		// IDs — one call, ~100 entries.
+		// IDs: one call, ~100 entries.
 		let descriptions = (CGWindowListCopyWindowInfo([.optionAll], kCGNullWindowID)
 			as? [[String: Any]] ?? [])
 			.filter { description in
@@ -125,7 +125,7 @@ final class MenuBarItemSource: NSObject {
 				let windowID = description[kCGWindowNumber as String] as? CGWindowID,
 				// Our own items (status icon, separators) never belong in the list: they are
 				// not items the user arranges. Keyed by window ID rather than PID/bundle ID,
-				// because every status item reports the same hosting process — a PID would
+				// because every status item reports the same hosting process, and a PID would
 				// exclude half the bar.
 				!excludedWindowIDs.contains(windowID),
 				let pid = description[kCGWindowOwnerPID as String] as? pid_t,
@@ -165,7 +165,7 @@ final class MenuBarItemSource: NSObject {
 		let items = enumerate()
 		print("[BarT] \(items.count) menu bar items (left → right):")
 		if !CGPreflightScreenCaptureAccess() {
-			print("[BarT]   Note: no screen recording permission — macOS withholds the window")
+			print("[BarT]   Note: no screen recording permission: macOS withholds the window")
 			print("[BarT]   titles, so names fall back to the hosting app. Beware: a binary")
 			print("[BarT]   started straight from a terminal inherits the terminal's permission")
 			print("[BarT]   and shows names the installed app does not get.")

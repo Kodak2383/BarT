@@ -8,7 +8,7 @@ on:
 
 jobs:
   build:
-    # macOS 26 with Xcode 26.6 — the deployment target is 26.0, so an older image cannot
+    # macOS 26 with Xcode 26.6. The deployment target is 26.0, so an older image cannot
     # build this at all. Checked against actions/runner-images on 2026-09-18.
     runs-on: macos-26
 

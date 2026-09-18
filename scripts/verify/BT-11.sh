@@ -1,5 +1,5 @@
 #!/bin/zsh
-# BT-11 — the recorded shortcut has to be the one that actually gets registered.
+# BT-11: the recorded shortcut has to be the one that actually gets registered.
 #
 # Writes a combination into BarT's own defaults exactly the way the recorder does (⌃⌥⌘K),
 # starts the app and reads back which combination it registered. That covers the half of the
@@ -13,7 +13,7 @@ DOMAIN=de.andreduhme.BarT
 APP=$(ls -d ~/Library/Developer/Xcode/DerivedData/BarT-*/Build/Products/Debug/BarT.app 2>/dev/null | head -1)
 [[ -n "$APP" ]] || { print "no built app found"; exit 1 }
 
-# Whatever the maintainer has set stays set — this script runs on their live machine.
+# Whatever the maintainer has set stays set; this script runs on their live machine.
 OLD_CODE=$(defaults read $DOMAIN hotKeyCode 2>/dev/null || print -- "-")
 OLD_MODS=$(defaults read $DOMAIN hotKeyModifiers 2>/dev/null || print -- "-")
 OLD_NAME=$(defaults read $DOMAIN hotKeyName 2>/dev/null || print -- "-")

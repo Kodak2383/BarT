@@ -5,7 +5,7 @@ import Observation
 /// Ties item enumeration and the separators together.
 ///
 /// The single source of truth for the settings UI: it reads ``items`` and ``section(of:)``.
-/// Since BT-15 the controller changes nothing about other apps' items — arranging them is the
+/// Since BT-15 the controller changes nothing about other apps' items; arranging them is the
 /// user's own ⌘-drag. What is left here is the reveal state and the list.
 @MainActor
 @Observable
@@ -19,17 +19,17 @@ final class MenuBarController {
 	private(set) var lastError: String?
 
 	/// `true` = the `hidden` section is temporarily revealed. `alwaysHidden` stays away while
-	/// it is — that is what the second separator is for.
+	/// it is. That is what the second separator is for.
 	private(set) var isRevealed = false
 
-	/// Called on every change of the reveal state, including the automatic collapse — which
+	/// Called on every change of the reveal state, including the automatic collapse, which
 	/// would otherwise bypass the menu bar icon's symbol.
 	var onRevealChanged: ((Bool) -> Void)?
 
 	private let source = MenuBarItemSource()
 	private let engine = SeparatorEngine()
 
-	/// The items' real icons. Read by the settings list, which also drives the capture — there
+	/// The items' real icons. Read by the settings list, which also drives the capture, because there
 	/// is nothing to look at while no window is open.
 	let icons = ItemIconSource()
 
@@ -38,7 +38,7 @@ final class MenuBarController {
 	/// `false` when the registered combination is already taken by another app.
 	private(set) var isHotKeyRegistered = false
 
-	/// Swaps the reveal shortcut for a new one, live — the settings recorder's only way in.
+	/// Swaps the reveal shortcut for a new one, live. The settings recorder's only way in.
 	///
 	/// - Returns: `nil` on success, otherwise one sentence for the user. On a refusal the
 	///   previous combination is still registered, so there is never a moment without one.
@@ -49,7 +49,7 @@ final class MenuBarController {
 		return failure
 	}
 
-	/// BarT's own menu bar windows (icon, both separators) — these must never show up in the
+	/// BarT's own menu bar windows (icon, both separators). These must never show up in the
 	/// list. The separators come from the engine, the status icon registers itself from outside
 	/// via ``excludeOwnWindow(_:)`` (see AppDelegate).
 	private var excludedWindowIDs: Set<CGWindowID> = []
@@ -77,8 +77,8 @@ final class MenuBarController {
 			self?.handleItemsChanged(items)
 		}
 
-		// Without the separators there are no sections at all, so this happens at startup —
-		// until BT-15 the first drag created them lazily, and there are no drags any more.
+		// Without the separators there are no sections at all, so this happens at startup.
+		// Until BT-15 the first drag created them lazily, and there are no drags any more.
 		do {
 			try await engine.prepareSeparators()
 		} catch {
@@ -92,13 +92,13 @@ final class MenuBarController {
 		source.start()
 	}
 
-	/// Temporarily reveals or re-hides the `hidden` section — the gesture that gets you to a
+	/// Temporarily reveals or re-hides the `hidden` section, the gesture that gets you to a
 	/// hidden item in the first place (a click on BarT's status item). `alwaysHidden`
 	/// deliberately stays away; that is exactly what the section is for.
 	///
 	/// - Parameter includingAlwaysHidden: additionally reveals `alwaysHidden` (⌥-click).
 	///   Switching from either state to the other does not collapse but only changes the
-	///   depth — only repeating the same gesture collapses.
+	///   depth; only repeating the same gesture collapses.
 	func toggleReveal(includingAlwaysHidden: Bool = false) {
 		let target: SeparatorEngine.Reveal = includingAlwaysHidden ? .all : .hidden
 		if engine.reveal == target { collapse() } else { reveal(target) }
@@ -115,7 +115,7 @@ final class MenuBarController {
 
 	/// The only moment a hidden item can be photographed at all.
 	///
-	/// ScreenCaptureKit has nothing to capture for a window that is not rendered — a hidden item
+	/// ScreenCaptureKit has nothing to capture for a window that is not rendered: a hidden item
 	/// sits off to the left of the bar and the capture fails with -3811. Revealing is what brings
 	/// it on screen, so that is when the icon is fetched, and the cache keeps it for the whole
 	/// session. Cheap to repeat: a pass with nothing missing returns without a single call.
@@ -164,7 +164,7 @@ final class MenuBarController {
 	/// Collapses again as soon as the user clicks anywhere outside the menu bar.
 	///
 	/// Clicks *inside* the menu bar are exempt: revealing was the whole point, and collapsing
-	/// right away would pull the item the user just clicked out from under the cursor — or
+	/// right away would pull the item the user just clicked out from under the cursor, or
 	/// interrupt the ⌘-drag they are using to arrange things. Our own app delivers nothing to a
 	/// global monitor anyway, so a click on BarT's own icon runs exclusively through
 	/// ``toggleReveal()``.
@@ -174,8 +174,8 @@ final class MenuBarController {
 			matching: [.leftMouseDown, .rightMouseDown]
 		) { [weak self] _ in
 			guard let self else { return }
-			// A click *inside* the menu bar is the user working with the revealed items — that
-			// renews the deadline rather than ending it.
+			// A click *inside* the menu bar is the user working with the revealed items, which
+			// renews the deadline instead of ending it.
 			guard !Self.isInMenuBar(NSEvent.mouseLocation) else {
 				self.startAutoCollapse()
 				return
@@ -193,7 +193,7 @@ final class MenuBarController {
 
 	/// How long the bar stays revealed without interaction.
 	///
-	/// ponytail: fixed rather than configurable — it is one more setting for a difference almost
+	/// ponytail: fixed, not configurable; it is one more setting for a difference almost
 	/// nobody wants to choose. Raise it here if practice says 15 s is too brisk.
 	private static let autoCollapseDelay: Duration = .seconds(15)
 
@@ -213,7 +213,7 @@ final class MenuBarController {
 		}
 	}
 
-	/// `visibleFrame` ends at the top exactly below the menu bar — whatever is above it is the
+	/// `visibleFrame` ends at the top exactly below the menu bar, so whatever is above it is the
 	/// menu bar.
 	private static func isInMenuBar(_ location: NSPoint) -> Bool {
 		guard let screen = NSScreen.screens.first(where: { $0.frame.contains(location) }) else {
@@ -222,7 +222,7 @@ final class MenuBarController {
 		return location.y > screen.visibleFrame.maxY
 	}
 
-	/// Debug: checks what can only be checked on a running system — the order of the
+	/// Debug: checks what can only be checked on a running system: the order of the
 	/// separators, and whether the hotkey could be registered at all.
 	func runStartupSelfTest() async {
 		await engine.runSeparatorSelfTest()
@@ -231,7 +231,7 @@ final class MenuBarController {
 		GlobalHotKey.runShortcutSelfTest()
 		print(
 			"[BarT] Hotkey \(GlobalHotKey.displayName): "
-				+ (isHotKeyRegistered ? "registered" : "FAILED — already taken")
+				+ (isHotKeyRegistered ? "registered" : "FAILED, already taken")
 		)
 	}
 

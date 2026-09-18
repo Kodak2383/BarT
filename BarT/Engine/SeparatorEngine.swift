@@ -3,7 +3,7 @@ import CoreGraphics
 
 /// Which of the three areas of the menu bar an item sits in.
 ///
-/// Not a stored assignment — the section of an item is *measured*, from its position relative to
+/// Not a stored assignment: the section of an item is *measured*, from its position relative to
 /// the separators. The user arranges items themselves with the ⌘-drag macOS provides, and macOS
 /// remembers the arrangement.
 enum MenuBarSection: String, CaseIterable, Sendable {
@@ -23,11 +23,11 @@ enum MenuBarSection: String, CaseIterable, Sendable {
 ///     [ visible ] [hidden separator] [ hidden ] [alwaysHidden separator] [ alwaysHidden ]
 ///
 /// How far the bar is expanded is decided by ``reveal``. Where an item actually sits is answered
-/// by ``placement(of:)`` — not by `isOnScreen`, which says something different.
+/// by ``placement(of:)``, not by `isOnScreen`, which says something different.
 ///
 /// This mechanism is BarT's own; it is the same approach Hidden Bar, Dozer and Vanilla take. The
 /// engine that used to *move* other apps' items into these areas with a simulated ⌘-drag was
-/// removed in BT-15 — it came from Ice (GPL-3.0), and arranging is the user's job now.
+/// removed in BT-15: it came from Ice (GPL-3.0), and arranging is the user's job now.
 ///
 /// ## Known limits
 /// - Private CGS calls (see `Bridging.swift`) are used to find the separators' window IDs. There
@@ -52,12 +52,12 @@ final class SeparatorEngine {
 	/// A status item of our own that acts as the boundary between two sections.
 	@MainActor
 	private final class Separator {
-		/// Width while collapsed — wide enough to push everything to its left out of the menu bar.
+		/// Width while collapsed, wide enough to push everything to its left out of the menu bar.
 		private static let collapsedLength: CGFloat = 10_000
 		private static let expandedLength: CGFloat = 24
 
 		private let item: NSStatusItem
-		/// Menu bar windows that already existed before *this* one was created — the basis for
+		/// Menu bar windows that already existed before *this* one was created. The basis for
 		/// the diff in ``realizedWindowID()``.
 		private let windowIDsBefore: Set<CGWindowID>
 		private var cachedWindowID: CGWindowID?
@@ -122,12 +122,12 @@ final class SeparatorEngine {
 	/// Boundary between `visible` (to its right) and `hidden` (to its left).
 	private var hiddenSeparator: Separator?
 	/// Boundary between `hidden` (to its right) and `alwaysHidden` (to its left). Always sits
-	/// left of the ``hiddenSeparator`` — ensured in ``prepareSeparators()``.
+	/// left of the ``hiddenSeparator``, ensured in ``prepareSeparators()``.
 	private var alwaysHiddenSeparator: Separator?
 
 	/// How far the bar is currently expanded.
 	enum Reveal {
-		/// `visible` only — the normal state.
+		/// `visible` only, the normal state.
 		case none
 		/// Plus `hidden`.
 		case hidden
@@ -148,7 +148,7 @@ final class SeparatorEngine {
 	private var hiddenSeparatorCollapses: Bool { reveal == .none }
 	private var alwaysHiddenSeparatorCollapses: Bool { reveal == .hidden }
 
-	/// Window IDs of our own separators, as far as they exist — for exclusion from the item
+	/// Window IDs of our own separators, as far as they exist, for exclusion from the item
 	/// list. Deliberately the window ID, not PID/bundle ID: all status items report the same
 	/// hosting process, so a PID would exclude half the bar.
 	var separatorWindowIDs: Set<CGWindowID> {
@@ -187,12 +187,12 @@ final class SeparatorEngine {
 
 	/// Creates both separators (if needed) and waits until they sit stably in the bar.
 	///
-	/// Called at startup — without the separators there are no sections at all. (Until BT-15 they
+	/// Called at startup, because without the separators there are no sections at all. (Until BT-15 they
 	/// were created lazily by the first drag; there are no drags any more.)
 	///
 	/// The order is crucial: the `alwaysHidden` separator has to sit left of the `hidden`
 	/// separator, otherwise the meaning of both sections is inverted. macOS places a new status
-	/// item left of the existing ones — hence strictly one after another, each fully realized
+	/// item left of the existing ones, hence strictly one after another, each fully realized
 	/// before the next joins: otherwise the next one's window ID diff would pick up its
 	/// predecessor's window, which is only just appearing. That placement is guaranteed nowhere,
 	/// so it is verified at the end.

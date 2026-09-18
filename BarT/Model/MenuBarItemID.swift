@@ -3,13 +3,13 @@ import CoreGraphics
 
 /// Runtime identity of a menu bar item.
 ///
-/// Valid within a single session only — `windowID` and `ownerPID` both change as soon as the
+/// Valid within a single session only: `windowID` and `ownerPID` both change as soon as the
 /// owning app restarts. Nothing here is persisted: which section an item belongs to is read from
 /// where it sits relative to the separators, and macOS remembers that arrangement itself.
 struct MenuBarItemID: Hashable, Sendable {
 	let windowID: CGWindowID
 
-	/// The *hosting* process for Apple's own items — macOS renders menu extras out of process,
+	/// The *hosting* process for Apple's own items. macOS renders menu extras out of process,
 	/// so all of them report Control Center. Determining the true owner needed the accessibility
 	/// permission, which BarT no longer asks for; see ``displayName`` for the consequence.
 	let ownerPID: pid_t
@@ -17,7 +17,7 @@ struct MenuBarItemID: Hashable, Sendable {
 	/// Bundle ID of the hosting app, or its process name as a fallback.
 	let bundleID: String
 
-	/// The item's window title, from `kCGWindowName` — "WiFi", "Clock", "CPU_mini". Measured on
+	/// The item's window title, from `kCGWindowName`: "WiFi", "Clock", "CPU_mini". Measured on
 	/// macOS 26: this needs the screen recording permission, and several of Apple's own extras
 	/// leave it empty even then.
 	let title: String
@@ -25,7 +25,7 @@ struct MenuBarItemID: Hashable, Sendable {
 	/// What the items view shows.
 	///
 	/// The title comes first, deliberately. Since the owner lookup went away with the drag
-	/// engine, the app name is the hosting process for every one of Apple's menu extras — eight
+	/// engine, the app name is the hosting process for every one of Apple's menu extras, and eight
 	/// rows of "Control Center" say less than "WiFi", "Battery", "Clock".
 	var displayName: String {
 		// Titles like "Item-0" are placeholders an app never meant as a name.
@@ -38,7 +38,7 @@ struct MenuBarItemID: Hashable, Sendable {
 	/// the live bar 2026-09-17: `com.apple.menuextra.TimeMachine`, `Battery_battery_details`,
 	/// `BentoBox-0`.
 	///
-	/// Deliberately conservative — it only touches the three shapes that are demonstrably an
+	/// Deliberately conservative: it only touches the three shapes that are demonstrably an
 	/// internal key, and leaves every name an app chose for itself alone. Splitting camel case
 	/// everywhere would turn "WiFi" into "Wi Fi", which is worse than doing nothing.
 	static func humanized(_ title: String) -> String {
@@ -86,7 +86,7 @@ struct MenuBarItemID: Hashable, Sendable {
 			("Network_speed", "Network speed"),
 			("CPU_mini", "CPU mini"),
 			("BentoBox-0", "BentoBox"),
-			// Names an app chose itself stay untouched — this is the regression that matters.
+			// Names an app chose itself stay untouched; this is the regression that matters.
 			("WiFi", "WiFi"),
 			("Clock", "Clock"),
 			("VorssaintMenuBarItem", "VorssaintMenuBarItem"),
@@ -109,7 +109,7 @@ struct MenuBarItem: Hashable, Sendable {
 	/// Global CG coordinates (origin top left), see ``CGSBridge/frame(for:)``.
 	let frame: CGRect
 
-	/// `false` once the item has been pushed out of the visible area — that is, exactly when a
+	/// `false` once the item has been pushed out of the visible area, that is, exactly when a
 	/// separator hides it.
 	let isOnScreen: Bool
 

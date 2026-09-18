@@ -1,22 +1,22 @@
 import AppKit
 import Carbon.HIToolbox
 
-/// A system-wide registered key combination — exactly one at a time (R4-Q7); ⌥-reveal stays a
+/// A system-wide registered key combination, exactly one at a time (R4-Q7); ⌥-reveal stays a
 /// click gesture.
 ///
 /// Deliberately built on the Carbon hotkey API rather than `NSEvent.addGlobalMonitorForEvents`:
-/// a global keyboard monitor would see *every* keystroke the user makes — passwords included —
+/// a global keyboard monitor would see *every* keystroke the user makes, passwords included,
 /// and would still pass the combination on to the frontmost app as well. `RegisterEventHotKey`
 /// registers this one combination and swallows it.
 ///
-/// Lives as long as the app does — hence no `deinit`, which would only ever run at quit.
+/// Lives as long as the app does, hence no `deinit`, which would only ever run at quit.
 @MainActor
 final class GlobalHotKey {
 	/// One key plus its modifiers, in the form Carbon wants them.
 	struct Combination: Equatable, Sendable {
 		let keyCode: UInt32
 
-		/// Carbon's own mask (`controlKey`, `cmdKey`, …) — *not* `NSEvent.ModifierFlags`.
+		/// Carbon's own mask (`controlKey`, `cmdKey`, …), *not* `NSEvent.ModifierFlags`.
 		let carbonModifiers: UInt32
 
 		/// What the key prints on *this* keyboard, taken from the event while recording.
@@ -42,8 +42,8 @@ final class GlobalHotKey {
 		keyName: "B"
 	)
 
-	/// The combination in force. Static because three places name it in a sentence — the
-	/// welcome window among them — and none of them has a controller to ask. There is one
+	/// The combination in force. Static because three places name it in a sentence, the
+	/// welcome window among them, and none of them has a controller to ask. There is one
 	/// shortcut for the whole app anyway.
 	private(set) static var current = loadFromDefaults() ?? defaultCombination
 
@@ -73,7 +73,7 @@ final class GlobalHotKey {
 
 	/// Swaps the live registration and remembers the combination.
 	///
-	/// - Returns: `nil` on success, otherwise one sentence for the user — and the combination
+	/// - Returns: `nil` on success, otherwise one sentence for the user, and the combination
 	///   that worked before is the one still working.
 	@discardableResult
 	func register(_ combination: Combination) -> String? {
@@ -117,15 +117,15 @@ final class GlobalHotKey {
 		return nil
 	}
 
-	/// Why this combination cannot be used — `nil` if it can.
+	/// Why this combination cannot be used, or `nil` if it can.
 	///
 	/// Two things Carbon does not say on its own. A combination without ⌃, ⌥ or ⌘ would swallow
 	/// the bare key in every app the user types in. And a shortcut macOS has already claimed
 	/// registers with `noErr` and then never fires, because the system sees the keystroke
-	/// first — which is why this reads the system's own list instead of trusting the status.
+	/// first, which is why this reads the system's own list instead of trusting the status.
 	static func refusal(for combination: Combination) -> String? {
 		guard combination.carbonModifiers & UInt32(controlKey | optionKey | cmdKey) != 0 else {
-			return "A shortcut needs ⌃, ⌥ or ⌘ — otherwise it would swallow "
+			return "A shortcut needs ⌃, ⌥ or ⌘. Without one it would swallow "
 				+ "\(combination.keyName) in every app."
 		}
 		guard !isSystemOwned(combination) else {
@@ -136,7 +136,7 @@ final class GlobalHotKey {
 	}
 
 	/// The combinations macOS reserved for itself, read from the same preference System
-	/// Settings writes. Public API on a foreign domain — BarT is not sandboxed.
+	/// Settings writes. Public API on a foreign domain, because BarT is not sandboxed.
 	///
 	/// ponytail: only the entries this list actually holds. An app-specific shortcut in another
 	/// app, or a system one recorded under a key code of -1, still slips through and simply
@@ -189,7 +189,7 @@ final class GlobalHotKey {
 		return Int(flags.rawValue)
 	}
 
-	/// Keys that print nothing — without these the field would show an invisible control
+	/// Keys that print nothing. Without these the field would show an invisible control
 	/// character where the user expects to read their own shortcut back.
 	private static let specialKeyNames: [Int: String] = [
 		kVK_Space: "␣", kVK_Return: "↩", kVK_Tab: "⇥", kVK_Delete: "⌫", kVK_ForwardDelete: "⌦",
@@ -211,7 +211,7 @@ final class GlobalHotKey {
 }
 
 extension GlobalHotKey {
-	/// Debug: the half of the shortcut that has no keyboard in it — how a combination is
+	/// Debug: the half of the shortcut that has no keyboard in it: how a combination is
 	/// written down, how the two modifier masks convert, and what gets refused before Carbon
 	/// ever sees it.
 	@discardableResult
@@ -292,7 +292,7 @@ extension GlobalHotKey {
 
 /// Action of the one registered hotkey.
 ///
-/// The Carbon handler below is a plain C function pointer and cannot capture anything — going
+/// The Carbon handler below is a plain C function pointer and cannot capture anything, so going
 /// through a file-global variable is the intended way to do this. It is written only from
 /// ``GlobalHotKey/init(action:)`` and read only in the handler, both on the main thread.
 private nonisolated(unsafe) var registeredAction: (@MainActor () -> Void)?

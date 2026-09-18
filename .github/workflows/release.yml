@@ -23,7 +23,7 @@ jobs:
       run: zsh scripts/release.sh
 
     - name: Publish
-      # `gh` is preinstalled on the runner — no third-party action for a one-line job.
+      # `gh` is preinstalled on the runner, so no third-party action for a one-line job.
       env:
         GH_TOKEN: ${{ github.token }}
       run: |

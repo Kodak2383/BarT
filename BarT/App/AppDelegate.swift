@@ -11,11 +11,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 	/// (`defaults delete de.andreduhme.BarT`) is what makes a first launch happen again.
 	private static let hasSeenWelcomeKey = "hasSeenWelcome"
 
-	/// Attached to the status item for the duration of a right-click only — see
+	/// Attached to the status item for the duration of a right-click only. See
 	/// ``statusItemClicked()``.
 	private var statusMenu: NSMenu?
 
-	/// Shown only while ⌥ is held — see ``menuNeedsUpdate(_:)``.
+	/// Shown only while ⌥ is held. See ``menuNeedsUpdate(_:)``.
 	private var debugMenuItems: [NSMenuItem] = []
 
 	let menuBarController = MenuBarController()
@@ -40,7 +40,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
 		// Create the status item in the menu bar. Determine its window ID by diffing before
 		// and after (the same technique DragHideEngine uses for the separators) and register
-		// it with the controller as our own window — it must never show up as a manageable
+		// it with the controller as our own window, which must never show up as a manageable
 		// item. Deliberately BEFORE menuBarController.start(): that call may immediately
 		// create a separator of its own (a new window ID), and in parallel the diff here
 		// would be ambiguous and could grab the wrong new window ID.
@@ -49,7 +49,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
 		if let button = statusItem?.button {
 			button.image = NSImage(systemSymbolName: Self.collapsedSymbol, accessibilityDescription: "BarT")
-			// The title is a fallback for a missing symbol only — otherwise the phase 0
+			// The title is a fallback for a missing symbol only. Otherwise the phase 0
 			// abbreviation would sit next to the icon permanently.
 			button.title = button.image == nil ? "BT" : ""
 			// Deliberately via `action` rather than `statusItem.menu`: an assigned menu already
@@ -69,7 +69,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 		)
 		menu.addItem(NSMenuItem(title: "Settings…", action: #selector(openSettings), keyEquivalent: ","))
 
-		// Debug tools. Purely read-only or purely computational, and hidden unless ⌥ is held —
+		// Debug tools. Purely read-only or purely computational, and hidden unless ⌥ is held;
 		// see ``menuNeedsUpdate(_:)``. They are useful while working on the app and only
 		// clutter the menu for everyone else.
 		let debugSeparator = NSMenuItem.separator()
@@ -92,7 +92,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
 		statusMenu = menu
 
-		// Last, so the window lands on top of a menu bar that is already in place — and after
+		// Last, so the window lands on top of a menu bar that is already in place, and after
 		// the status item exists, because it is the thing the text points at.
 		if !UserDefaults.standard.bool(forKey: Self.hasSeenWelcomeKey) {
 			showWelcome()
@@ -135,7 +135,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 		guard let statusItem, let button = statusItem.button else { return }
 
 		if NSApp.currentEvent?.type == .rightMouseUp {
-			// Attach for the duration of this click only and detach right after —
+			// Attach for the duration of this click only and detach right after:
 			// `performClick` blocks until the menu closes.
 			statusItem.menu = statusMenu
 			button.performClick(nil)
@@ -143,13 +143,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 			return
 		}
 
-		// ⌥-click additionally reveals “Always hidden” — the section the plain gesture
+		// ⌥-click additionally reveals “Always hidden”, the section the plain gesture
 		// deliberately leaves out.
 		let withOption = NSApp.currentEvent?.modifierFlags.contains(.option) == true
 		menuBarController.toggleReveal(includingAlwaysHidden: withOption)
 	}
 
-	/// Keeps the symbol in sync with the reveal state — which also changes without a click,
+	/// Keeps the symbol in sync with the reveal state, which also changes without a click,
 	/// as soon as the user clicks somewhere else.
 	private func updateStatusItemSymbol(isRevealed: Bool) {
 		guard let button = statusItem?.button else { return }
@@ -182,13 +182,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 		NSApplication.shared.activate(ignoringOtherApps: true)
 	}
 
-	/// The standard panel already reads name, version and icon from the bundle — there is
+	/// The standard panel already reads name, version and icon from the bundle, so there is
 	/// nothing here worth writing by hand.
 	@objc
 	func showAbout() {
 		NSApplication.shared.activate(ignoringOtherApps: true)
-		// The GPL asks for the notice to travel with the *program*, not just with the repository —
-		// so it belongs in the panel rather than only in a file nobody who downloads a zip reads.
+		// The GPL asks for the notice to travel with the *program*, not just with the repository,
+		// so it belongs in the panel and not only in a file nobody who downloads a zip reads.
 		//
 		// The licence and nothing else. This used to add "contains code from Ice", which tells a
 		// reader that foreign code is running in here; what is actually left of that is six
@@ -228,7 +228,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 		window.title = "BarT Settings"
 		window.setFrame(NSRect(x: 0, y: 0, width: 520, height: 480), display: false)
 		window.center()
-		// Resizable because the Items tab holds a list as long as the user's menu bar is — the
+		// Resizable because the Items tab holds a list as long as the user's menu bar is. The
 		// minimum size comes from SettingsView.
 		window.styleMask = [.titled, .closable, .miniaturizable, .resizable]
 		window.isReleasedWhenClosed = false

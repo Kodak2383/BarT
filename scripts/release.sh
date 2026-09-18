@@ -1,7 +1,7 @@
 #!/bin/zsh
 # Builds the app the way a download gets it, and zips it.
 #
-# One script, run both by hand and by the release workflow on a tag — what gets tested on a clean
+# One script, run both by hand and by the release workflow on a tag, so what gets tested on a clean
 # account is then byte-for-byte what ships. Deliberately into ./build rather than the shared
 # DerivedData: the artefact's path has to be predictable, and gates.sh owns the other one.
 #

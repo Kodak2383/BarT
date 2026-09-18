@@ -1,19 +1,19 @@
-# BarT — Board
+# BarT board
 
-Scope and decisions: [PRD.md](PRD.md). One file per issue in [issues/](issues/) — each written to
-be handed to a fresh session on its own.
+Scope and decisions: [PRD.md](PRD.md). One file per issue in [issues/](issues/), each written
+to be handed to a fresh session on its own.
 
 **Revised 2026-09-17.** The Ice code comes out (PRD §7), which deletes automatic arranging and with
 it four issues. BarT ships free; the price question waits for the assertion engine.
 
 **Mode markers**
-- 🤖 **AFK** — I can build *and* verify it alone (build, self-tests, screenshots, `System Events`).
-- 👤 **HITL** — needs you somewhere, and the issue says where. Three things I cannot do: grant a
+- 🤖 **AFK**: I can build *and* verify it alone (build, self-tests, screenshots, `System Events`).
+- 👤 **HITL**: needs you somewhere, and the issue says where. Three things I cannot do: grant a
   permission, judge whether something *feels* right, use your GitHub account.
 
 ## Columns
 
-### Ready — unblocked, startable now
+### Ready (unblocked, startable now)
 | ID | Title | Mode | Note |
 | --- | --- | --- | --- |
 | [BT-14](issues/BT-14.md) | Publish 1.0 | 👤 HITL | *published; only the clean-account install is left* |
@@ -38,7 +38,7 @@ Nothing.
 ### Dropped
 | ID | Title | Why |
 | --- | --- | --- |
-| [BT-13](issues/BT-13.md) | Accessibility names for the tabs | The problem never existed — `.tabItem` already sets `AXDescription` |
+| [BT-13](issues/BT-13.md) | Accessibility names for the tabs | The problem never existed: `.tabItem` already sets `AXDescription` |
 | [BT-05](issues/BT-05.md) | Starting-point proposal | BarT cannot move items any more |
 | [BT-08](issues/BT-08.md) | Context menu on icons | The items view is read-only |
 | [BT-09](issues/BT-09.md) | Drag icons between sections | Would need the capability BT-15 removes |
@@ -59,7 +59,7 @@ graph LR
   BT16 --> BT02[BT-02 README ✅]
   BT11[BT-11 Shortcut ✅]
   BT01[BT-01 Licences ✅] --> BT02[BT-02 README ✅]
-  BT02 --> BT14[BT-14 Publish — shipped, install untested]
+  BT02 --> BT14[BT-14 Publish: shipped, install untested]
   BT07 --> BT14
   BT16 --> BT14
   BT11 --> BT14
@@ -69,17 +69,17 @@ graph LR
 ## How this is cut
 
 Every issue is a **vertical slice**: it crosses whatever layers it needs and ends in something
-observable in the running app. Hence the "Visible result" line in each — an issue that cannot state
+observable in the running app. Hence the "Visible result" line in each: an issue that cannot state
 one is cut wrong.
 
-[BT-15](issues/BT-15.md) is the exception that proves it: its visible result is *nothing changes*.
-It deletes machinery the user never saw, and the proof of success is that reveal and collapse
-behave exactly as before. That is why it is one removing commit and nothing else — revertible in a
-single step if the assertion engine later wants pieces back.
+[BT-15](issues/BT-15.md) is the one that looks like a counter-example: its visible result is
+*nothing changes*. It deletes machinery the user never saw, and the proof of success is that
+reveal and collapse behave exactly as before. It is therefore one removing commit and nothing
+else, revertible in a single step if the assertion engine later wants pieces back.
 
 The tracer-bullet idea survives in [BT-06](issues/BT-06.md): capture one icon per item and draw it
 in the list that already exists, before building the grid on top of it. It answers the riskiest
-unknown (a new permission, an unproven API, unknown cost) first rather than last.
+unknown first: a new permission, an unproven API, unknown cost.
 
 ## Parallelism
 
@@ -89,7 +89,7 @@ published zip was downloaded, unpacked and run to prove it is not a corrupt arte
 
 One thing in [BT-14](issues/BT-14.md) is still open and cannot be closed from here: **a stranger's
 install.** A `curl` download carries no quarantine attribute, so the Gatekeeper instructions in the
-README — right-click → Open, then Privacy & Security → Open Anyway — have never actually been
+README, right-click → Open and then Privacy & Security → Open Anyway, have never actually been
 walked. Neither has the screen recording prompt on a Mac that has not already answered it.
 
 A fresh user account on this machine is the cheap version of that test. Whatever step it turns up

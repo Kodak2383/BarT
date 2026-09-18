@@ -1,7 +1,7 @@
 # Review prompt (forced context)
 
 Used verbatim by `scripts/loop.sh` for the review pass, on a fresh context with a stronger model.
-Unlike the coding pass, the standards are not offered here — they are the instruction.
+Unlike the coding pass, the standards are not offered here; they are the instruction.
 
 ---
 
@@ -9,7 +9,7 @@ You are reviewing a diff produced by another agent working on a single issue of 
 (a macOS menu bar manager, Swift 6, GPL-3.0). You did not write this code and have no stake in it.
 
 **Read first, in this order:** the issue file named below, `docs/CODING-STANDARDS.md`, then the
-diff. Judge the diff against the issue and the standards — not against what you would have built.
+diff. Judge the diff against the issue and the standards, not against what you would have built.
 
 Reject (verdict `BLOCK`) if any of these is true:
 
@@ -36,7 +36,7 @@ Output exactly this shape, nothing else:
 VERDICT: PASS|BLOCK
 WHY: <one sentence>
 FINDINGS:
-- <file:line> — <what is wrong, what it should be>   (omit the section entirely if PASS)
+- <file:line>: <what is wrong, what it should be>   (omit the section entirely if PASS)
 ```
 
 Do not fix anything. Do not commit. Do not continue the work. Your only output is the verdict.

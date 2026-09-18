@@ -4,7 +4,7 @@ import SwiftUI
 ///
 /// BarT places an icon and otherwise does nothing visible, so without this window the first
 /// impression is an app that did not start. Two things have to land: that it hides items, and
-/// that *arranging* them is a gesture macOS has always had and almost nobody knows (PRD §3.2) —
+/// that *arranging* them is a gesture macOS has always had and almost nobody knows (PRD §3.2):
 /// an app that relies on a gesture has to teach it, or it looks broken.
 ///
 /// Asks for no permission at all. The one BarT still needs belongs to the view that uses it
@@ -31,11 +31,11 @@ struct WelcomeView: View {
 			step(
 				"hand.draw",
 				"You decide what goes where",
-				"Hold ⌘ and drag an item along the menu bar, past one of BarT's two separators — "
-					+ "the small ‹ markers. They only show while the hidden items are revealed, so "
-					+ "click BarT's icon first — ⌥-click brings out the second separator too. macOS has always allowed this gesture and "
-					+ "remembers where you put things; BarT shows you the result, it never moves "
-					+ "an item itself.",
+				"Hold ⌘ and drag an item along the menu bar, past one of BarT's two separators, "
+					+ "the small ‹ markers. They only show while the hidden items are revealed, "
+					+ "so click BarT's icon first; an ⌥-click brings out the second separator "
+					+ "too. macOS has always allowed this gesture and remembers where you put "
+					+ "things. BarT shows you the result and never moves an item itself.",
 				illustration: gestureIllustration
 			)
 			step(
@@ -83,7 +83,7 @@ struct WelcomeView: View {
 	///
 	/// The one thing in this window a sentence cannot carry on its own: the reader has never
 	/// seen the separators, so "drag it past the separator" needs a picture of what they are
-	/// aiming at. Drawn rather than captured — a screenshot of this would be three grey smudges
+	/// aiming at. Drawn instead of captured, because a screenshot of this would be three grey smudges
 	/// and would go stale with the next appearance change.
 	@ViewBuilder
 	private func gestureIllustration() -> some View {

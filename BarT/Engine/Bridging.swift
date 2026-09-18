@@ -10,7 +10,7 @@ import OSLog
 // parameter names. CGSGetProcessMenuBarWindowList is in no public header: its signature was
 // taken from Ice (GPL-3.0, Ice/Bridging/Shims/Private.swift, commit
 // 11edd39115f3f43a83ae114b5348df6a0e1741cf) and mirrors its sibling CGSGetOnScreenWindowList
-// parameter for parameter. The symbol itself is Apple's — CoreGraphics re-exports it from
+// parameter for parameter. The symbol itself is Apple's: CoreGraphics re-exports it from
 // SkyLight, checked with `dyld_info -exports`.
 //
 // None of this is guessed, and that is the point: a wrong signature here causes silent memory
@@ -82,7 +82,7 @@ enum CGSBridge {
 		return list.filter(onScreen.contains)
 	}
 
-	/// Window frame in global CG coordinates (origin top left) — the same coordinate basis
+	/// Window frame in global CG coordinates (origin top left), the same coordinate basis
 	/// `CGEvent` expects for `mouseCursorPosition`. No flip needed. `NSScreen.frame`, by
 	/// contrast, is bottom-left based; do not mix the two.
 	static func frame(for windowID: CGWindowID) -> CGRect? {

@@ -5,7 +5,7 @@ import ScreenCaptureKit
 /// The real icon of every menu bar item, captured from the item's own window.
 ///
 /// Since BT-15 the view is read-only, so an icon the user recognises is all the identification
-/// that is left — and it is the only one that works: measured 2026-09-17, nine of twenty-one
+/// that is left, and it is the only one that works: measured 2026-09-17, nine of twenty-one
 /// items hand out no window title at all, and every one of them falls back to "Control Center".
 ///
 /// One pass per list rather than one call per item: ``SCShareableContent`` is the expensive part
@@ -19,12 +19,12 @@ final class ItemIconSource {
 	/// What the menu bar itself looks like behind its items, sampled once per pass.
 	///
 	/// The bar is translucent: with a dark desktop picture it goes dark under a light system
-	/// appearance, and macOS then draws every glyph white — which is invisible on the settings
+	/// appearance, and macOS then draws every glyph white, which is invisible on the settings
 	/// window's background. The icons sit on a chip of this colour instead, the way they sit in
 	/// the bar.
 	private(set) var menuBarTint: NSColor?
 
-	/// Window IDs that were in the list but produced no image — remembered so a pass does not
+	/// Window IDs that were in the list but produced no image, remembered so a pass does not
 	/// retry them forever. Cleared with the cache.
 	private var failed: Set<CGWindowID> = []
 
@@ -36,7 +36,7 @@ final class ItemIconSource {
 
 	/// Captures every icon that is not cached yet; a no-op once they all are.
 	/// - Parameter items: only the ones currently on screen are attempted. A window that is not
-	///   rendered has nothing to capture — ScreenCaptureKit answers with error -3811 (measured
+	///   rendered has nothing to capture: ScreenCaptureKit answers with error -3811 (measured
 	///   2026-09-17 on a hidden item), and a hidden item is pushed off to the left of the bar.
 	///   Those get their turn from ``MenuBarController``, which runs a pass while the bar is
 	///   revealed and they are briefly visible.
@@ -71,7 +71,7 @@ final class ItemIconSource {
 				captured += 1
 			}
 		} catch {
-			// Denied, revoked mid-session, or the window vanished — the list keeps working and
+			// Denied, revoked mid-session, or the window vanished. The list keeps working and
 			// shows names only.
 			log.error("icon pass failed: \(error.localizedDescription)")
 		}
@@ -83,7 +83,7 @@ final class ItemIconSource {
 		)
 	}
 
-	/// Throws away everything — after the screen recording permission changed, the cached
+	/// Throws away everything: after the screen recording permission changed, the cached
 	/// failures are all stale.
 	func reset() {
 		icons.removeAll()
@@ -91,7 +91,7 @@ final class ItemIconSource {
 		menuBarTint = nil
 	}
 
-	/// The menu bar's backdrop, read from a strip in the middle of the bar — the app menus end
+	/// The menu bar's backdrop, read from a strip in the middle of the bar. The app menus end
 	/// well to its left and the status items start well to its right, so what is left there is
 	/// the bar itself.
 	private static func sampleMenuBarTint() async -> NSColor? {
@@ -100,7 +100,7 @@ final class ItemIconSource {
 		guard barHeight > 2 else { return nil }
 		let strip = CGRect(x: screen.frame.midX, y: 1, width: 40, height: barHeight - 2)
 		guard let image = try? await SCScreenshotManager.captureImage(in: strip) else { return nil }
-		// Averaging by drawing into a single pixel — the cheapest mean there is, and the
+		// Averaging by drawing into a single pixel, the cheapest mean there is, and the
 		// gradient across the bar is exactly what should be averaged away.
 		var pixel: [UInt8] = [0, 0, 0, 0]
 		guard
@@ -124,7 +124,7 @@ final class ItemIconSource {
 		// Points to pixels by hand: the default output is the content size in *points*, which on
 		// a Retina display is a 22 px thumbnail of a 44 px icon.
 		// A window thousands of points wide is one of BarT's own collapsed separators, not an
-		// icon — and capturing it would allocate an image twenty thousand pixels across.
+		// icon, and capturing it would allocate an image twenty thousand pixels across.
 		guard filter.contentRect.width < 512 else { return nil }
 		let scale = CGFloat(filter.pointPixelScale)
 		configuration.width = Int(filter.contentRect.width * scale)
@@ -149,7 +149,7 @@ final class ItemIconSource {
 
 extension ItemIconSource {
 	/// Captures the live bar once and reports how many items gave up an icon and what the pass
-	/// cost — the number BT-06 asks to be measured, and the only way to see that a change to the
+	/// cost, the number BT-06 asks to be measured, and the only way to see that a change to the
 	/// capture path still captures anything.
 	@discardableResult
 	func runIconSelfTest() async -> Bool {

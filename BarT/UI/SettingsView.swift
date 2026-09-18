@@ -28,7 +28,7 @@ struct SettingsView: View {
 			let granted = ScreenRecordingPermission.isGranted
 			guard granted != hasScreenRecording else { return }
 			hasScreenRecording = granted
-			// The titles read while the permission was missing are wrong for good — only a
+			// The titles read while the permission was missing are wrong for good; only a
 			// fresh enumeration carries the real names.
 			controller.refresh()
 		}
@@ -64,7 +64,7 @@ private struct GeneralSettingsTab: View {
 								try loginItems.unregister()
 							}
 						} catch {
-							// Registration failed — the toggle shows the actual state.
+							// Registration failed; the toggle shows the actual state.
 							launchAtLogin = loginItems.isRegistered()
 						}
 					}
@@ -120,7 +120,7 @@ private struct ItemsSettingsTab: View {
 	@Binding var hasScreenRecording: Bool
 
 	/// The prompt belongs to the first look at the items, not to launch: at launch BarT has
-	/// nothing on screen to explain what it is asking for. Per launch once — macOS shows the
+	/// nothing on screen to explain what it is asking for. Per launch once, because macOS shows the
 	/// dialog only the first time anyway, and a silent no-op on every tab switch is noise.
 	@MainActor private static var didRequestThisLaunch = false
 
@@ -140,7 +140,7 @@ private struct ItemsSettingsTab: View {
 				// say "Control Center" twelve times over. Saying so beats showing it silently.
 				HStack(alignment: .firstTextBaseline, spacing: 10) {
 					Label(
-						"The icons need the screen recording permission — without it macOS hands out neither them nor the names, and every item reports its hosting app.",
+						"The icons need the screen recording permission. Without it macOS hands out neither them nor the names, and every item reports its hosting app.",
 						systemImage: "info.circle"
 					)
 					.frame(maxWidth: .infinity, alignment: .leading)
@@ -165,15 +165,15 @@ private struct ItemsSettingsTab: View {
 				)
 			} else {
 				// Read-only (PRD §3.3): the grid shows where items sit, it does not move them.
-				// Arranging is the user's own ⌘-drag in the menu bar, which BT-16 explains —
+				// Arranging is the user's own ⌘-drag in the menu bar, which BT-16 explains,
 				// hence no picker, no menu and no drop target anywhere below.
 				ScrollView {
 					VStack(alignment: .leading, spacing: 18) {
 						Label(
 							// Measured on the live bar: a plain reveal expands only the first
 							// separator, so the second ‹ is not on screen until ⌥-click.
-							"The ‹ separators only appear while the hidden items are revealed — "
-								+ "click BarT's icon first, ⌥-click to bring out the second "
+							"The ‹ separators only appear while the hidden items are revealed. "
+								+ "Click BarT's icon first, ⌥-click to bring out the second "
 								+ "separator too, then ⌘-drag.",
 							systemImage: "hand.draw"
 						)
@@ -241,7 +241,7 @@ private struct ItemsSettingsTab: View {
 		}
 	}
 
-	/// Wide enough for the items that are text rather than a glyph — a clock or a network meter
+	/// Wide enough for the items that are text instead of a glyph: a clock or a network meter
 	/// is about twice as wide as it is tall.
 	private static let cellWidth: CGFloat = 54
 	private static let cellHeight: CGFloat = 24
@@ -272,7 +272,7 @@ private struct ItemsSettingsTab: View {
 					.fill(Color(nsColor: controller.icons.menuBarTint ?? .windowBackgroundColor))
 			}
 		}
-		// The icon is a picture of a name nobody wrote down — without this the grid is silent to
+		// The icon is a picture of a name nobody wrote down. Without this the grid is silent to
 		// VoiceOver, and the tooltip answers the same question with the mouse.
 		.help(item.displayName)
 		.accessibilityElement(children: .ignore)
@@ -288,7 +288,7 @@ private struct ItemsSettingsTab: View {
 		}
 	}
 
-	/// Says how the section is reached *and* how an item gets into it — the gesture belongs
+	/// Says how the section is reached *and* how an item gets into it. The gesture belongs
 	/// next to the thing it changes, not in a help page (BT-16). Every sentence names the ‹
 	/// separator, because that is what the user is aiming at and they have never seen one.
 	private static func explanation(of section: MenuBarSection) -> String {
@@ -308,7 +308,7 @@ private struct ItemsSettingsTab: View {
 /// Click, press a combination, done (BT-11).
 ///
 /// The keystrokes are read with a *local* event monitor: it sees only what is aimed at this
-/// window — the one the user just clicked — and swallows it. A global monitor would want the
+/// window, the one the user just clicked, and swallows it. A global monitor would want the
 /// accessibility permission BT-15 got rid of, for a field that is live for two seconds. BarT
 /// installs no main menu, so there are no key equivalents to race against either.
 private struct ShortcutRecorder: View {
@@ -333,14 +333,14 @@ private struct ShortcutRecorder: View {
 			}
 			Group {
 				if let message {
-					// The refusal, in the user's words — and the old shortcut still works.
+					// The refusal, in the user's words; the old shortcut still works.
 					Text(message)
 						.foregroundStyle(.red)
 				} else if isRecording {
 					Text("⎋ cancels.")
 						.foregroundStyle(.secondary)
 				} else if !controller.isHotKeyRegistered {
-					Text("Not registered — another app is holding it.")
+					Text("Not registered. Another app is holding it.")
 						.foregroundStyle(.red)
 				}
 			}
