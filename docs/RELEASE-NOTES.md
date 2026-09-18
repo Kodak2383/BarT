@@ -40,4 +40,4 @@ treats the next version as a different app. There is no way around that short of
 ## Licence
 
 GPL-3.0. The source, the third-party notices and the full provenance of the private API
-declarations are in the repository.
+declarations are at <https://github.com/Kodak2383/BarT>.
