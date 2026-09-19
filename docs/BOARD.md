@@ -14,9 +14,7 @@ it four issues. BarT ships free; the price question waits for the assertion engi
 ## Columns
 
 ### Ready (unblocked, startable now)
-| ID | Title | Mode | Note |
-| --- | --- | --- | --- |
-| [BT-14](issues/BT-14.md) | Publish 1.0 | 👤 HITL | *published; only the clean-account install is left* |
+Nothing.
 
 ### Blocked
 Nothing.
@@ -24,6 +22,7 @@ Nothing.
 ### Done
 | ID | Title | Verified by |
 | --- | --- | --- |
+| [BT-14](issues/BT-14.md) | Publish 1.0 | Installed from the release link in a fresh user account, reported successful by the maintainer 2026-09-19 |
 | [BT-12](issues/BT-12.md) | Auto-collapse after 15 seconds | Icon `»` → hotkey → `«` → 16 s → `»`, captured live |
 | [BT-01](issues/BT-01.md) | Ship the licences | grep proves no "MIT" claim is left; about-panel text still needs one human look |
 | [BT-15](issues/BT-15.md) | Remove the Ice-derived drag engine | ~1,000 lines gone, gates pass, reveal and auto-collapse unchanged on the live bar |
@@ -59,7 +58,7 @@ graph LR
   BT16 --> BT02[BT-02 README ✅]
   BT11[BT-11 Shortcut ✅]
   BT01[BT-01 Licences ✅] --> BT02[BT-02 README ✅]
-  BT02 --> BT14[BT-14 Publish: shipped, install untested]
+  BT02 --> BT14[BT-14 Publish ✅]
   BT07 --> BT14
   BT16 --> BT14
   BT11 --> BT14
@@ -81,16 +80,15 @@ The tracer-bullet idea survives in [BT-06](issues/BT-06.md): capture one icon pe
 in the list that already exists, before building the grid on top of it. It answers the riskiest
 unknown first: a new permission, an unproven API, unknown cost.
 
-## Parallelism
+## Where this stands
 
-Nothing runs in parallel any more. BarT 1.0.0 is public at
-<https://github.com/Kodak2383/BarT/releases/tag/v1.0.0>, CI is green on `macos-26`, and the
-published zip was downloaded, unpacked and run to prove it is not a corrupt artefact.
+The board is empty. BarT 1.0.0 is public at
+<https://github.com/Kodak2383/BarT/releases/tag/v1.0.0>, CI is green on `macos-26`, the published
+zip was downloaded and run rather than assumed, and the install has been walked from that link in a
+fresh user account.
 
-One thing in [BT-14](issues/BT-14.md) is still open and cannot be closed from here: **a stranger's
-install.** A `curl` download carries no quarantine attribute, so the Gatekeeper instructions in the
-README, right-click → Open and then Privacy & Security → Open Anyway, have never actually been
-walked. Neither has the screen recording prompt on a Mac that has not already answered it.
+`main` is one commit ahead of the tag (the cleanup pass), which changes no string and no behaviour.
+The next thing that is visible to a user ships as `v1.0.1` rather than by moving the tag again.
 
-A fresh user account on this machine is the cheap version of that test. Whatever step it turns up
-as missing belongs in the README before anyone else is pointed at the link.
+What is on the list for after 1.0 is in [PRD.md](PRD.md) §6: the macOS 27 assertion engine, and
+with it the question of whether a paid version becomes defensible.
