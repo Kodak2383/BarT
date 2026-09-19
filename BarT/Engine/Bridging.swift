@@ -70,16 +70,40 @@ func CGSGetScreenRectForWindow(
 private let log = Logger(subsystem: "de.andreduhme.BarT", category: "CGSBridge")
 
 enum CGSBridge {
-	/// Window IDs of the menu bar items of *all* running processes.
+	/// Window IDs of the menu bar items of *all* running processes, ordered left to right.
+	static func menuBarWindowIDs() -> [CGWindowID] { menuBarWindowList() }
+
+	/// Every window that is currently rendered, for intersecting with ``menuBarWindowIDs()``.
+	/// That intersection is what distinguishes a "hidden" item (pushed off to the left out of
+	/// the bar) from a visible one.
 	///
-	/// - Parameter onScreenOnly: only items that are currently rendered visibly. This flag is
-	///   exactly what distinguishes a "hidden" item (pushed off to the left out of the bar)
-	///   from a visible one.
-	static func menuBarWindowIDs(onScreenOnly: Bool) -> [CGWindowID] {
-		let list = menuBarWindowList()
-		guard onScreenOnly else { return list }
-		let onScreen = Set(onScreenWindowList())
-		return list.filter(onScreen.contains)
+	/// Deliberately not a flag on ``menuBarWindowIDs()``: as one function it invited asking
+	/// twice, once with and once without, and that fetched the whole menu bar list twice.
+	static func onScreenWindowIDs() -> Set<CGWindowID> { Set(onScreenWindowList()) }
+
+	/// The menu bar window that appears after a status item is created, once its frame has
+	/// stopped moving.
+	///
+	/// `button.window.windowNumber` has been useless for this since macOS 26: status items are
+	/// hosted out of process, and the local `NSWindow` constantly reports `0x2_0000_0000`
+	/// (measured live). The real ID is the menu bar window that is newly in the CGS list.
+	///
+	/// What is awaited is a *stable* frame rather than a fixed sleep: a status item slides in
+	/// with an animation (measured at ~450 ms, from 12×10 to 40×30 pt). Both callers, the
+	/// separators and BarT's own status icon, need exactly this, and a fixed sleep guesses.
+	@MainActor
+	static func newMenuBarWindowID(notIn before: Set<CGWindowID>) async -> CGWindowID? {
+		var lastFrame: CGRect?
+		for attempt in 0..<40 {
+			if attempt > 0 { try? await Task.sleep(for: .milliseconds(25)) }
+			guard
+				let id = menuBarWindowIDs().first(where: { !before.contains($0) }),
+				let frame = frame(for: id)
+			else { continue }
+			if frame == lastFrame { return id }
+			lastFrame = frame
+		}
+		return nil
 	}
 
 	/// Window frame in global CG coordinates (origin top left), the same coordinate basis

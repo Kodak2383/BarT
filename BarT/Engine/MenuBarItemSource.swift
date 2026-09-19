@@ -20,6 +20,8 @@ final class MenuBarItemSource: NSObject {
 	var onChange: (([MenuBarItem]) -> Void)?
 
 	private var pollTask: Task<Void, Never>?
+	/// The one refresh a burst of launch/quit notifications is allowed to schedule.
+	private var pendingRefresh: Task<Void, Never>?
 
 	/// CGS reports no changes; there is no notification for "item added". Hence polling as the
 	/// baseline; the workspace notifications are only a latency improvement for the most
@@ -47,12 +49,6 @@ final class MenuBarItemSource: NSObject {
 		)
 	}
 
-	func stop() {
-		pollTask?.cancel()
-		pollTask = nil
-		NSWorkspace.shared.notificationCenter.removeObserver(self)
-	}
-
 	deinit {
 		NSWorkspace.shared.notificationCenter.removeObserver(self)
 	}
@@ -74,9 +70,13 @@ final class MenuBarItemSource: NSObject {
 	@objc
 	private func workspaceDidChange(_ notification: Notification) {
 		// A freshly launched app only registers its status item a few hundred milliseconds
-		// after the launch notification.
-		Task { [weak self] in
+		// after the launch notification. One pending refresh, not one per notification: at
+		// login a dozen apps report within the same window, and each refresh is a full
+		// enumeration that would find the same bar.
+		pendingRefresh?.cancel()
+		pendingRefresh = Task { [weak self] in
 			try? await Task.sleep(for: .milliseconds(750))
+			guard !Task.isCancelled else { return }
 			self?.refresh()
 		}
 	}
@@ -91,9 +91,9 @@ final class MenuBarItemSource: NSObject {
 	/// - Parameter excludedWindowIDs: windows that must never come back as items (BarT's own
 	///   status items).
 	static func enumerate(excluding excludedWindowIDs: Set<CGWindowID> = []) -> [MenuBarItem] {
-		let windowIDs = Set(CGSBridge.menuBarWindowIDs(onScreenOnly: false))
+		let windowIDs = Set(CGSBridge.menuBarWindowIDs())
 		guard !windowIDs.isEmpty else { return [] }
-		let onScreen = Set(CGSBridge.menuBarWindowIDs(onScreenOnly: true))
+		let onScreen = windowIDs.intersection(CGSBridge.onScreenWindowIDs())
 
 		// `CGWindowListCreateDescriptionFromArray` verifiably returns an empty list for menu
 		// bar windows. So fetch the full window list instead and intersect it with the CGS
@@ -164,7 +164,7 @@ final class MenuBarItemSource: NSObject {
 	static func debugDump() {
 		let items = enumerate()
 		print("[BarT] \(items.count) menu bar items (left → right):")
-		if !CGPreflightScreenCaptureAccess() {
+		if !ScreenRecordingPermission.isGranted {
 			print("[BarT]   Note: no screen recording permission: macOS withholds the window")
 			print("[BarT]   titles, so names fall back to the hosting app. Beware: a binary")
 			print("[BarT]   started straight from a terminal inherits the terminal's permission")

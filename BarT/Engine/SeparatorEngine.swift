@@ -69,7 +69,7 @@ final class SeparatorEngine {
 
 		init(isCollapsed: Bool) {
 			self.isCollapsed = isCollapsed
-			windowIDsBefore = Set(CGSBridge.menuBarWindowIDs(onScreenOnly: false))
+			windowIDsBefore = Set(CGSBridge.menuBarWindowIDs())
 			item = NSStatusBar.system.statusItem(
 				withLength: isCollapsed ? Self.collapsedLength : Self.expandedLength
 			)
@@ -84,31 +84,11 @@ final class SeparatorEngine {
 		var frame: CGRect? { cachedWindowID.flatMap(CGSBridge.frame(for:)) }
 
 		/// The CGWindowID, as soon as the separator sits fully laid out in the menu bar.
-		///
-		/// `button.window.windowNumber` has been useless for this since macOS 26: status items
-		/// are hosted out of process, and the local `NSWindow` constantly reports
-		/// `0x2_0000_0000` (measured live). The real ID is instead the menu bar window that
-		/// newly appears in the CGS list after creation.
-		///
-		/// What is awaited is a *stable* frame rather than a fixed sleep: the separator slides
-		/// in with an animation (measured at ~450 ms, from 12×10 to 40×30 pt).
+		/// Asked once; ``CGSBridge/newMenuBarWindowID(notIn:)`` explains how it is found.
 		func realizedWindowID() async -> CGWindowID? {
 			if let cachedWindowID { return cachedWindowID }
-			var lastFrame: CGRect?
-			for attempt in 0..<40 {
-				if attempt > 0 { try? await Task.sleep(for: .milliseconds(25)) }
-				guard
-					let id = CGSBridge.menuBarWindowIDs(onScreenOnly: false)
-						.first(where: { !windowIDsBefore.contains($0) }),
-					let frame = CGSBridge.frame(for: id)
-				else { continue }
-				if frame == lastFrame {
-					cachedWindowID = id
-					return id
-				}
-				lastFrame = frame
-			}
-			return nil
+			cachedWindowID = await CGSBridge.newMenuBarWindowID(notIn: windowIDsBefore)
+			return cachedWindowID
 		}
 
 		func remove() {
@@ -155,22 +135,38 @@ final class SeparatorEngine {
 		Set([hiddenSeparator?.windowID, alwaysHiddenSeparator?.windowID].compactMap { $0 })
 	}
 
+	/// Where the separators stand this instant. Read once per pass and handed to
+	/// ``placement(of:against:)``: read per item instead, twenty-one items meant forty-two CGS
+	/// round trips for two numbers, and the sections would be measured against a bar that can
+	/// move underneath them halfway through.
+	struct SeparatorFrames {
+		let hidden: CGRect?
+		let alwaysHidden: CGRect?
+	}
+
+	var separatorFrames: SeparatorFrames {
+		SeparatorFrames(hidden: hiddenSeparator?.frame, alwaysHidden: alwaysHiddenSeparator?.frame)
+	}
+
 	/// Where the item *actually* sits, measured against the separators.
 	///
 	/// `isOnScreen` is no good for this: `hidden` and `alwaysHidden` are both invisible as long
 	/// as nothing is revealed, and conversely, while revealed, hidden things are visible too.
 	/// The position relative to the separators, by contrast, is correct in every state.
 	///
+	/// The item's frame is read live rather than taken from `item.frame`: that read is also how
+	/// a window that has vanished in the meantime is noticed.
+	///
 	/// - Returns: `nil` when the window has vanished.
-	func placement(of item: MenuBarItem) -> MenuBarSection? {
+	func placement(of item: MenuBarItem, against separators: SeparatorFrames) -> MenuBarSection? {
 		guard let frame = CGSBridge.frame(for: item.windowID) else { return nil }
 		// Without separators there is nothing for anything to be to the left of.
 		guard
-			let hiddenFrame = hiddenSeparator?.frame,
+			let hiddenFrame = separators.hidden,
 			frame.maxX <= hiddenFrame.minX + Self.tolerance
 		else { return .visible }
 		guard
-			let alwaysHiddenFrame = alwaysHiddenSeparator?.frame,
+			let alwaysHiddenFrame = separators.alwaysHidden,
 			frame.maxX <= alwaysHiddenFrame.minX + Self.tolerance
 		else { return .hidden }
 		return .alwaysHidden

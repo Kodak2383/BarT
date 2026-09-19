@@ -69,10 +69,7 @@ final class MenuBarController {
 		engine.reveal = .none
 		// Ask for the separator IDs fresh on every enumeration instead of adding them later:
 		// otherwise they slip through as items between creation and registration.
-		source.excludedWindowIDs = { [weak self] in
-			guard let self else { return [] }
-			return self.excludedWindowIDs.union(self.engine.separatorWindowIDs)
-		}
+		source.excludedWindowIDs = { [weak self] in self?.allExcludedWindowIDs ?? [] }
 		source.onChange = { [weak self] items in
 			self?.handleItemsChanged(items)
 		}
@@ -121,9 +118,8 @@ final class MenuBarController {
 	/// session. Cheap to repeat: a pass with nothing missing returns without a single call.
 	private func captureRevealedIcons() {
 		Task { [weak self] in
-			// The separators change width with an animation (~450 ms); until it ends the items
-			// are still sliding into view.
-			try? await Task.sleep(for: .milliseconds(500))
+			// Until the width change ends the items are still sliding into view.
+			try? await Task.sleep(for: Self.separatorAnimation)
 			guard let self, self.engine.reveal != .none else { return }
 			// Enumerated fresh rather than from ``items``: what matters here is which windows
 			// are on screen *now*, and that is exactly what revealing just changed.
@@ -131,11 +127,15 @@ final class MenuBarController {
 		}
 	}
 
+	/// Everything that belongs to BarT itself and must never come back as an item: the status
+	/// icon, registered from outside, plus whichever separators exist at this moment.
+	private var allExcludedWindowIDs: Set<CGWindowID> {
+		excludedWindowIDs.union(engine.separatorWindowIDs)
+	}
+
 	/// The bar as it is this instant, without touching the poll's own bookkeeping.
 	private func currentItems() -> [MenuBarItem] {
-		MenuBarItemSource.enumerate(
-			excluding: excludedWindowIDs.union(engine.separatorWindowIDs)
-		)
+		MenuBarItemSource.enumerate(excluding: allExcludedWindowIDs)
 	}
 
 	private func collapse() {
@@ -145,11 +145,10 @@ final class MenuBarController {
 		stopOutsideClickMonitor()
 		autoCollapse?.cancel()
 		onRevealChanged?(false)
-		// ``isRevealed`` stays set until the animation ends: the separators change width with
-		// an animation (~450 ms), so every position measurement is an intermediate state for
-		// that long.
+		// ``isRevealed`` stays set until the width change ends, because every position
+		// measurement is an intermediate state for that long.
 		Task {
-			try? await Task.sleep(for: .milliseconds(500))
+			try? await Task.sleep(for: Self.separatorAnimation)
 			// Revealed again in the meantime? Then the field belongs to the new state.
 			guard self.engine.reveal == .none else { return }
 			self.isRevealed = false
@@ -190,6 +189,11 @@ final class MenuBarController {
 	}
 
 	// MARK: Auto-collapse
+
+	/// How long a separator needs before its width change has finished and a position read
+	/// means anything. Measured at ~450 ms; the two places that wait for it are the icon
+	/// capture and the section re-measurement after a collapse.
+	private static let separatorAnimation: Duration = .milliseconds(500)
 
 	/// How long the bar stays revealed without interaction.
 	///
@@ -247,9 +251,10 @@ final class MenuBarController {
 	private func handleItemsChanged(_ items: [MenuBarItem]) {
 		self.items = items
 		// Measure every item in the same pass: the sections are only comparable when they were
-		// read against the same separator positions.
+		// read against the same separator positions, so those are read once, here.
+		let separators = engine.separatorFrames
 		sections = items.reduce(into: [:]) { result, item in
-			result[item.windowID] = engine.placement(of: item) ?? .visible
+			result[item.windowID] = engine.placement(of: item, against: separators) ?? .visible
 		}
 	}
 }

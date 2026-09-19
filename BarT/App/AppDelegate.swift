@@ -38,13 +38,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 			Task { try? await Task.sleep(for: .seconds(2)); self.openSettings() }
 		}
 
-		// Create the status item in the menu bar. Determine its window ID by diffing before
-		// and after (the same technique DragHideEngine uses for the separators) and register
-		// it with the controller as our own window, which must never show up as a manageable
+		// Create the status item in the menu bar. Its window ID is found by diffing the menu
+		// bar list before and after, the same way the separators find theirs, and registered
+		// with the controller as our own window, which must never show up as a manageable
 		// item. Deliberately BEFORE menuBarController.start(): that call may immediately
 		// create a separator of its own (a new window ID), and in parallel the diff here
 		// would be ambiguous and could grab the wrong new window ID.
-		let windowIDsBeforeStatusItem = Set(CGSBridge.menuBarWindowIDs(onScreenOnly: false))
+		let windowIDsBeforeStatusItem = Set(CGSBridge.menuBarWindowIDs())
 		statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
 
 		if let button = statusItem?.button {
@@ -103,11 +103,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 		}
 
 		Task { [menuBarController] in
-			// A new status item slides in with an animation (see DragHideEngine); before that
-			// there is no stable window ID to find.
-			try? await Task.sleep(for: .milliseconds(600))
-			if let ownWindowID = Set(CGSBridge.menuBarWindowIDs(onScreenOnly: false))
-				.subtracting(windowIDsBeforeStatusItem).first {
+			// Waits for the slide-in to settle rather than guessing at it; this used to sleep
+			// a fixed 600 ms and take whichever new ID came first.
+			if let ownWindowID = await CGSBridge.newMenuBarWindowID(notIn: windowIDsBeforeStatusItem) {
 				menuBarController.excludeOwnWindow(ownWindowID)
 			}
 			// Only start now: our own window ID is safely excluded before the controller
@@ -164,22 +162,38 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 	@objc
 	func showWelcome() {
 		UserDefaults.standard.set(true, forKey: Self.hasSeenWelcomeKey)
-		if let welcomeWindow, welcomeWindow.isVisible {
-			welcomeWindow.makeKeyAndOrderFront(nil)
-			NSApplication.shared.activate(ignoringOtherApps: true)
-			return
-		}
-		let view = WelcomeView { [weak self] in self?.welcomeWindow?.close() }
-		let window = NSWindow(contentViewController: NSHostingController(rootView: view))
-		window.title = "Welcome to BarT"
 		// Not resizable: the text is laid out for one width, and there is nothing in here that
 		// gets better with more room.
-		window.styleMask = [.titled, .closable]
-		window.isReleasedWhenClosed = false
-		window.center()
-		welcomeWindow = window
-		window.makeKeyAndOrderFront(nil)
-		NSApplication.shared.activate(ignoringOtherApps: true)
+		present(&welcomeWindow, title: "Welcome to BarT", styleMask: [.titled, .closable]) {
+			NSHostingController(rootView: WelcomeView { [weak self] in self?.welcomeWindow?.close() })
+		}
+	}
+
+	/// Brings one of BarT's two windows to the front, building it on first use.
+	///
+	/// Both of them are singletons that outlive their own close (`isReleasedWhenClosed` is off),
+	/// and both have to raise the app as well: BarT is an accessory app, so a window it orders
+	/// front while another app is active would open behind that app.
+	private func present(
+		_ window: inout NSWindow?,
+		title: String,
+		styleMask: NSWindow.StyleMask,
+		size: NSSize? = nil,
+		content: () -> NSViewController
+	) {
+		defer { NSApplication.shared.activate(ignoringOtherApps: true) }
+		if let window, window.isVisible {
+			window.makeKeyAndOrderFront(nil)
+			return
+		}
+		let new = NSWindow(contentViewController: content())
+		new.title = title
+		new.styleMask = styleMask
+		new.isReleasedWhenClosed = false
+		if let size { new.setFrame(NSRect(origin: .zero, size: size), display: false) }
+		new.center()
+		window = new
+		new.makeKeyAndOrderFront(nil)
 	}
 
 	/// The standard panel already reads name, version and icon from the bundle, so there is
@@ -213,29 +227,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
 	@objc
 	func openSettings() {
-		// Reuse the window if it is already open.
-		if let existingWindow = settingsWindow, existingWindow.isVisible {
-			existingWindow.makeKeyAndOrderFront(nil)
-			NSApplication.shared.activate(ignoringOtherApps: true)
-			return
-		}
-
-		// Build a new settings window.
-		let settingsView = SettingsView(controller: menuBarController)
-		let hostingController = NSHostingController(rootView: settingsView)
-
-		let window = NSWindow(contentViewController: hostingController)
-		window.title = "BarT Settings"
-		window.setFrame(NSRect(x: 0, y: 0, width: 520, height: 480), display: false)
-		window.center()
 		// Resizable because the Items tab holds a list as long as the user's menu bar is. The
 		// minimum size comes from SettingsView.
-		window.styleMask = [.titled, .closable, .miniaturizable, .resizable]
-		window.isReleasedWhenClosed = false
-
-		self.settingsWindow = window
-		window.makeKeyAndOrderFront(nil)
-		NSApplication.shared.activate(ignoringOtherApps: true)
+		present(
+			&settingsWindow,
+			title: "BarT Settings",
+			styleMask: [.titled, .closable, .miniaturizable, .resizable],
+			size: NSSize(width: 520, height: 480)
+		) {
+			NSHostingController(rootView: SettingsView(controller: menuBarController))
+		}
 	}
 }
 

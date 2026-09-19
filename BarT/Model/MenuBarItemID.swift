@@ -114,6 +114,5 @@ struct MenuBarItem: Hashable, Sendable {
 	let isOnScreen: Bool
 
 	var windowID: CGWindowID { id.windowID }
-	var ownerPID: pid_t { id.ownerPID }
 	var displayName: String { id.displayName }
 }

@@ -89,10 +89,6 @@ final class GlobalHotKey {
 		return nil
 	}
 
-	/// Back to ⌃⌥⌘B.
-	@discardableResult
-	func reset() -> String? { register(Self.defaultCombination) }
-
 	/// The Carbon half: unregister what is there, register what was asked for.
 	private func apply(_ combination: Combination) -> String? {
 		isRegistered = false

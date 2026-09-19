@@ -47,7 +47,7 @@ private struct GeneralSettingsTab: View {
 	init(controller: MenuBarController, hasScreenRecording: Binding<Bool>) {
 		self.controller = controller
 		_hasScreenRecording = hasScreenRecording
-		_launchAtLogin = State(initialValue: LoginItemManager().isRegistered())
+		_launchAtLogin = State(initialValue: loginItems.isRegistered())
 	}
 
 	var body: some View {
