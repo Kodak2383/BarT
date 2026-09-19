@@ -4,9 +4,10 @@
 <dict>
 	<!--
 	IMPORTANT: the App Sandbox is DISABLED.
-	Reason: BarT drives other applications' processes through the macOS Accessibility API.
-	The App Sandbox does not permit that kind of control (for security reasons).
-	The sandbox therefore has to be disabled explicitly here.
+	Reason: BarT reads the menu bar's window list through private CoreGraphics Services calls
+	(see Bridging.swift). A sandboxed process cannot reach them, and it cannot read the
+	system's own shortcut list in com.apple.symbolichotkeys either (see GlobalHotKey.swift).
+	This used to name the Accessibility API, which BarT stopped using in BT-15.
 	-->
 	<key>com.apple.security.app-sandbox</key>
 	<false/>
