@@ -1,6 +1,18 @@
 BarT hides the part of your menu bar you rarely need and brings it back for a moment when you ask.
 Which item goes where is your own ⌘-drag, and BarT never moves anything itself.
 
+## New in 1.0.1
+
+- With the settings window closed, BarT no longer reads the menu bar every two seconds. It now does
+  nothing until you open the window or reveal the hidden items.
+- When **Launch at login** does not take, the settings say why and offer a way to Login Items in
+  System Settings. Before, the switch just flipped back.
+- The Items tab names the right shortcut after you record a new one.
+- The colour behind the icons in the Items tab is measured on the main display, and again each time
+  the window opens.
+
+Coming from 1.0.0, macOS asks for screen recording once more (see below).
+
 ## Opening it the first time
 
 BarT is not signed and not notarised, so macOS will not let a double-click open it.

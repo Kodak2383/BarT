@@ -23,8 +23,8 @@ targets:
       path: BarT/Info.plist
       properties:
         LSUIElement: true
-        CFBundleShortVersionString: "1.0.0"
-        CFBundleVersion: "1"
+        CFBundleShortVersionString: "1.0.1"
+        CFBundleVersion: "2"
     entitlements:
       path: BarT/BarT.entitlements
       properties:

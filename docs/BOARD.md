@@ -82,13 +82,15 @@ unknown first: a new permission, an unproven API, unknown cost.
 
 ## Where this stands
 
-The board is empty. BarT 1.0.0 is public at
-<https://github.com/Kodak2383/BarT/releases/tag/v1.0.0>, CI is green on `macos-26`, the published
-zip was downloaded and run rather than assumed, and the install has been walked from that link in a
-fresh user account.
+The board is empty. BarT 1.0.1 is public at
+<https://github.com/Kodak2383/BarT/releases/tag/v1.0.1>. It came out of a code review: the menu bar
+is only polled while the settings window is open (measured on the installed build: 16.6 idle
+wakeups a second before, none after), plus the fixes listed in [RELEASE-NOTES.md](RELEASE-NOTES.md).
+The 1.0.0 install was walked in a fresh user account; 1.0.1 changes nothing about installing, so
+that walk was not repeated. The Launch at login hint and the tint on a second display are
+untested: the first would register a debug build as a login item, the second needs a second display.
 
-`main` is one commit ahead of the tag (the cleanup pass), which changes no string and no behaviour.
-The next thing that is visible to a user ships as `v1.0.1` rather than by moving the tag again.
+A later release gets a new tag, never a moved one.
 
 What is on the list for after 1.0 is in [PRD.md](PRD.md) §6: the macOS 27 assertion engine, and
 with it the question of whether a paid version becomes defensible.
