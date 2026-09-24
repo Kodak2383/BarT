@@ -190,6 +190,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 		new.title = title
 		new.styleMask = styleMask
 		new.isReleasedWhenClosed = false
+		new.delegate = self
 		if let size { new.setFrame(NSRect(origin: .zero, size: size), display: false) }
 		new.center()
 		window = new
@@ -227,6 +228,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
 	@objc
 	func openSettings() {
+		// Only the settings window reads the item list, so this is where watching starts.
+		// Safe to call every time, even while the window is already open: see
+		// ``MenuBarController/startWatching()``.
+		menuBarController.startWatching()
 		// Resizable because the Items tab holds a list as long as the user's menu bar is. The
 		// minimum size comes from SettingsView.
 		present(
@@ -237,6 +242,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 		) {
 			NSHostingController(rootView: SettingsView(controller: menuBarController))
 		}
+	}
+}
+
+extension AppDelegate: NSWindowDelegate {
+	/// Stops watching as soon as the settings window closes: it is the only reader of the item
+	/// list, so nothing is left to poll for. The welcome window shares this delegate too, but
+	/// closing it does not match ``settingsWindow`` and falls through.
+	func windowWillClose(_ notification: Notification) {
+		guard notification.object as? NSWindow === settingsWindow else { return }
+		menuBarController.stopWatching()
 	}
 }
 

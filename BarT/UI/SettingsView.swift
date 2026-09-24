@@ -44,10 +44,27 @@ private struct GeneralSettingsTab: View {
 
 	@State private var launchAtLogin: Bool
 
+	/// One sentence for when the toggle does not mean what it shows: registration failed, or it
+	/// went through but macOS is still waiting on the user's approval.
+	@State private var loginItemMessage: String?
+
 	init(controller: MenuBarController, hasScreenRecording: Binding<Bool>) {
 		self.controller = controller
 		_hasScreenRecording = hasScreenRecording
 		_launchAtLogin = State(initialValue: loginItems.isRegistered())
+		_loginItemMessage = State(
+			initialValue: loginItems.needsApproval ? Self.approvalNeededMessage : nil
+		)
+	}
+
+	private static let approvalNeededMessage =
+		"BarT needs your approval in Login Items before it can launch automatically."
+
+	/// Re-reads the real status: after a register/unregister call, and after an app activation,
+	/// since the user grants or revokes the approval in System Settings while BarT is not looking.
+	private func refreshLoginItemState() {
+		launchAtLogin = loginItems.isRegistered()
+		loginItemMessage = loginItems.needsApproval ? Self.approvalNeededMessage : nil
 	}
 
 	var body: some View {
@@ -57,18 +74,35 @@ private struct GeneralSettingsTab: View {
 			Section {
 				Toggle("Launch at login", isOn: $launchAtLogin)
 					.onChange(of: launchAtLogin) { _, newValue in
+						// Setting the toggle back to the real state lands here again. Without
+						// this guard that echo would unregister an app that is only waiting for
+						// approval, and the hint below would vanish along with it.
+						guard newValue != loginItems.isRegistered() else { return }
 						do {
 							if newValue {
 								try loginItems.register()
 							} else {
 								try loginItems.unregister()
 							}
+							refreshLoginItemState()
 						} catch {
-							// Registration failed; the toggle shows the actual state.
+							// Registration failed; the toggle shows the actual state, and the
+							// user learns why instead of a toggle that silently snapped back.
 							launchAtLogin = loginItems.isRegistered()
+							loginItemMessage = "BarT could not change this. Check Login Items "
+								+ "in System Settings."
 						}
 					}
-
+				if let loginItemMessage {
+					HStack(spacing: 8) {
+						Text(loginItemMessage)
+							.foregroundStyle(.red)
+						Button("Open System Settings…") {
+							loginItems.openSystemSettings()
+						}
+					}
+					.font(.caption)
+				}
 			}
 
 			Section("Revealing hidden items") {
@@ -111,6 +145,11 @@ private struct GeneralSettingsTab: View {
 			}
 		}
 		.formStyle(.grouped)
+		.onReceive(
+			NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)
+		) { _ in
+			refreshLoginItemState()
+		}
 	}
 }
 
@@ -123,6 +162,18 @@ private struct ItemsSettingsTab: View {
 	/// nothing on screen to explain what it is asking for. Per launch once, because macOS shows the
 	/// dialog only the first time anyway, and a silent no-op on every tab switch is noise.
 	@MainActor private static var didRequestThisLaunch = false
+
+	/// ``GlobalHotKey/current`` is a plain static var, so recording a new shortcut in the General
+	/// tab would not redraw this tab, and the explanation kept naming the old one. The same
+	/// write that updates `current` stores these two, and ``shortcutName`` reads them so the
+	/// dependency is real.
+	@AppStorage(GlobalHotKey.keyNameDefault) private var hotKeyName = ""
+	@AppStorage(GlobalHotKey.modifiersDefault) private var hotKeyModifiers = 0
+
+	private var shortcutName: String {
+		_ = (hotKeyName, hotKeyModifiers)
+		return GlobalHotKey.displayName
+	}
 
 	var body: some View {
 		VStack(spacing: 0) {
@@ -235,7 +286,7 @@ private struct ItemsSettingsTab: View {
 					}
 				}
 			}
-			Text(Self.explanation(of: section))
+			Text(Self.explanation(of: section, shortcut: shortcutName))
 				.font(.caption)
 				.foregroundStyle(.secondary)
 		}
@@ -291,12 +342,12 @@ private struct ItemsSettingsTab: View {
 	/// Says how the section is reached *and* how an item gets into it. The gesture belongs
 	/// next to the thing it changes, not in a help page (BT-16). Every sentence names the ‹
 	/// separator, because that is what the user is aiming at and they have never seen one.
-	private static func explanation(of section: MenuBarSection) -> String {
+	private static func explanation(of section: MenuBarSection, shortcut: String) -> String {
 		switch section {
 		case .visible:
 			"Always in the menu bar. ⌘-drag an item right past both ‹ separators to bring it back here."
 		case .hidden:
-			"Revealed by clicking the BarT icon or pressing \(GlobalHotKey.displayName). "
+			"Revealed by clicking the BarT icon or pressing \(shortcut). "
 				+ "⌘-drag an item left past the first ‹ separator to move it here."
 		case .alwaysHidden:
 			"Only revealed on ⌥-click. ⌘-drag an item left past both ‹ separators to move it here."

@@ -13,7 +13,7 @@ final class MenuBarItemSource: NSObject {
 	///
 	/// Deliberately a closure instead of a set: the separators come into existence a moment
 	/// after launch, and between creating them and adding them to a set there would be a
-	/// polling window of up to two seconds during which they show up as ordinary items.
+	/// window during which they show up as ordinary items.
 	var excludedWindowIDs: () -> Set<CGWindowID> = { [] }
 
 	/// Called only when the item list has actually changed.
@@ -33,7 +33,9 @@ final class MenuBarItemSource: NSObject {
 		refresh()
 		pollTask = Task { [weak self] in
 			while !Task.isCancelled {
-				try? await Task.sleep(for: self?.pollInterval ?? .seconds(2))
+				try? await Task.sleep(
+					for: self?.pollInterval ?? .seconds(2), tolerance: .milliseconds(500)
+				)
 				guard let self, !Task.isCancelled else { return }
 				self.refresh()
 			}
@@ -47,6 +49,16 @@ final class MenuBarItemSource: NSObject {
 			self, selector: #selector(workspaceDidChange),
 			name: NSWorkspace.didTerminateApplicationNotification, object: nil
 		)
+	}
+
+	/// Stops the poll and the workspace observers. Nothing reads ``items`` while the settings
+	/// window is closed, so there is nothing left to poll for.
+	func stop() {
+		pollTask?.cancel()
+		pollTask = nil
+		pendingRefresh?.cancel()
+		pendingRefresh = nil
+		NSWorkspace.shared.notificationCenter.removeObserver(self)
 	}
 
 	deinit {

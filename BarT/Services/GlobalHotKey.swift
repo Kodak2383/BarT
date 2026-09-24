@@ -262,8 +262,12 @@ extension GlobalHotKey {
 	}
 
 	private static let keyCodeDefault = "hotKeyCode"
-	private static let modifiersDefault = "hotKeyModifiers"
-	private static let keyNameDefault = "hotKeyName"
+
+	/// Not private: SettingsView watches these two with `@AppStorage` to notice a recorded
+	/// shortcut, since ``current`` is a plain static var SwiftUI does not observe on its own.
+	/// Together they cover every change; the key code only ever moves with the key name.
+	static let modifiersDefault = "hotKeyModifiers"
+	static let keyNameDefault = "hotKeyName"
 
 	private static func loadFromDefaults() -> Combination? {
 		let defaults = UserDefaults.standard

@@ -28,6 +28,9 @@ final class ItemIconSource {
 	/// retry them forever. Cleared with the cache.
 	private var failed: Set<CGWindowID> = []
 
+	/// Set by ``resampleTintOnNextLoad()``, consumed by the next ``load(for:)``.
+	private var tintNeedsResample = false
+
 	private var isCapturing = false
 
 	private let log = Logger(subsystem: "de.andreduhme.BarT", category: "ItemIconSource")
@@ -44,16 +47,29 @@ final class ItemIconSource {
 		let missing = items.filter {
 			$0.isOnScreen && icons[$0.windowID] == nil && !failed.contains($0.windowID)
 		}
-		guard !missing.isEmpty, !isCapturing, ScreenRecordingPermission.isGranted else { return }
+		// The tint gets its own condition: once every icon is cached there is nothing missing,
+		// and a re-sample asked for by a reopened window would otherwise never run.
+		let needsTint = menuBarTint == nil || tintNeedsResample
+		guard !missing.isEmpty || needsTint, !isCapturing, ScreenRecordingPermission.isGranted
+		else { return }
 		isCapturing = true
 		defer { isCapturing = false }
 
+		if needsTint {
+			tintNeedsResample = false
+			// Keep the old value on a failed sample rather than clearing it: the settings chip
+			// would otherwise flash to no colour while the new sample is in flight.
+			if let tint = await Self.sampleMenuBarTint() { menuBarTint = tint }
+		}
+		guard !missing.isEmpty else { return }
+
 		let started = ContinuousClock.now
 		var captured = 0
-		if menuBarTint == nil { menuBarTint = await Self.sampleMenuBarTint() }
 		do {
-			// `onScreenWindowsOnly: false` is the whole point: a hidden item sits pushed out to
-			// the left of the bar, and it is exactly the one whose name says nothing.
+			// `onScreenWindowsOnly: false`: kept even though `missing` above already filters to
+			// `isOnScreen` items, because whether ScreenCaptureKit's own on-screen notion lines
+			// up exactly with `isOnScreen` was never measured. `true` might be cheaper; worth
+			// trying if this pass ever shows up in a profile.
 			let content = try await SCShareableContent.excludingDesktopWindows(
 				false, onScreenWindowsOnly: false
 			)
@@ -91,11 +107,27 @@ final class ItemIconSource {
 		menuBarTint = nil
 	}
 
+	/// Drops cached icons and failures for window IDs that are no longer in the list. Hidden
+	/// items are still in that list (``MenuBarItemSource`` enumerates them too), so their icons
+	/// survive; only windows that vanished for good are forgotten.
+	func forget(allBut ids: Set<CGWindowID>) {
+		icons = icons.filter { ids.contains($0.key) }
+		failed.formIntersection(ids)
+	}
+
+	/// Marks the tint stale without clearing it, so the next ``load(for:)`` samples again
+	/// (the settings window just reopened) without the chip flashing to no colour in between.
+	func resampleTintOnNextLoad() {
+		tintNeedsResample = true
+	}
+
 	/// The menu bar's backdrop, read from a strip in the middle of the bar. The app menus end
 	/// well to its left and the status items start well to its right, so what is left there is
 	/// the bar itself.
 	private static func sampleMenuBarTint() async -> NSColor? {
-		guard let screen = NSScreen.main else { return nil }
+		// The strip rect below uses y=1 in global coordinates, which is the primary display's
+		// menu bar, not whichever screen `.main` happens to be (the one with the key window).
+		guard let screen = NSScreen.screens.first else { return nil }
 		let barHeight = screen.frame.maxY - screen.visibleFrame.maxY
 		guard barHeight > 2 else { return nil }
 		let strip = CGRect(x: screen.frame.midX, y: 1, width: 40, height: barHeight - 2)

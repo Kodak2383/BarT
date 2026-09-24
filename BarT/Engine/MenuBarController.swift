@@ -86,7 +86,23 @@ final class MenuBarController {
 		let hotKey = GlobalHotKey { [weak self] in self?.toggleReveal() }
 		self.hotKey = hotKey
 		isHotKeyRegistered = hotKey.isRegistered
+	}
+
+	/// Starts polling and the workspace observers: the settings window is the only reader of
+	/// ``items``/``sections``, so there is nothing to watch for while it is closed.
+	///
+	/// Safe to call again while already watching: ``MenuBarItemSource/start()`` guards against
+	/// a second poll task, and `present(_:)` (AppDelegate) reuses a visible window rather than
+	/// reopening it.
+	func startWatching() {
+		icons.resampleTintOnNextLoad()
+		handleItemsChanged(source.snapshot())
 		source.start()
+	}
+
+	/// Stops polling and the workspace observers once the settings window is closed.
+	func stopWatching() {
+		source.stop()
 	}
 
 	/// Temporarily reveals or re-hides the `hidden` section, the gesture that gets you to a
@@ -211,7 +227,7 @@ final class MenuBarController {
 	private func startAutoCollapse() {
 		autoCollapse?.cancel()
 		autoCollapse = Task { [weak self] in
-			try? await Task.sleep(for: Self.autoCollapseDelay)
+			try? await Task.sleep(for: Self.autoCollapseDelay, tolerance: .seconds(1))
 			guard !Task.isCancelled else { return }
 			self?.collapse()
 		}
@@ -250,6 +266,9 @@ final class MenuBarController {
 
 	private func handleItemsChanged(_ items: [MenuBarItem]) {
 		self.items = items
+		// Hidden items are still in this list (``MenuBarItemSource`` enumerates them too), so
+		// only windows that are gone for good drop out of the icon cache.
+		icons.forget(allBut: Set(items.map(\.windowID)))
 		// Measure every item in the same pass: the sections are only comparable when they were
 		// read against the same separator positions, so those are read once, here.
 		let separators = engine.separatorFrames
