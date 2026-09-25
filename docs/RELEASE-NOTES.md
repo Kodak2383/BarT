@@ -1,6 +1,17 @@
 BarT hides the part of your menu bar you rarely need and brings it back for a moment when you ask.
 Which item goes where is your own ⌘-drag, and BarT never moves anything itself.
 
+## New in 1.0.2
+
+- If the two separators came up in the wrong order at launch, BarT removed them, hid nothing, and
+  showed "The two separators sit in the wrong order". Removing them also made macOS forget where you
+  had dragged them. They now swap roles instead, and your arrangement stays.
+- The separators' positions are saved under names of their own. An arrangement from an earlier
+  version carries over.
+
+If 1.0.1 showed that message, the arrangement it lost cannot be restored: ⌘-drag the items once
+more.
+
 ## New in 1.0.1
 
 - With the settings window closed, BarT no longer reads the menu bar every two seconds. It now does
@@ -11,7 +22,7 @@ Which item goes where is your own ⌘-drag, and BarT never moves anything itself
 - The colour behind the icons in the Items tab is measured on the main display, and again each time
   the window opens.
 
-Coming from 1.0.0, macOS asks for screen recording once more (see below).
+Coming from an earlier version, macOS asks for screen recording once more (see below).
 
 ## Opening it the first time
 

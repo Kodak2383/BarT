@@ -42,7 +42,7 @@ itself, and it stores nothing about your arrangement, because macOS already reme
 BarT is not signed and not notarised. There is no Apple developer certificate behind it, so macOS
 treats it as software from an unidentified developer.
 
-1. Download `BarT-1.0.1.zip` from the [latest release](https://github.com/Kodak2383/BarT/releases/latest) and unpack it.
+1. Download `BarT-1.0.2.zip` from the [latest release](https://github.com/Kodak2383/BarT/releases/latest) and unpack it.
 2. Move **BarT.app** to your **Applications** folder.
 3. **Right-click** the app and choose **Open**, then **Open** again in the dialog. Double-clicking
    the first time only offers you a Cancel button.

@@ -82,8 +82,14 @@ unknown first: a new permission, an unproven API, unknown cost.
 
 ## Where this stands
 
-The board is empty. BarT 1.0.1 is public at
-<https://github.com/Kodak2383/BarT/releases/tag/v1.0.1>. It came out of a code review: the menu bar
+The board is empty. BarT 1.0.2 is public at
+<https://github.com/Kodak2383/BarT/releases/tag/v1.0.2>. It fixes a start with the separators in the
+wrong order, which in 1.0.1 removed them and with them the user's saved arrangement; they now swap
+roles, and carry their positions under names of their own. The swap was tested with an inverted
+saved order under the self-test names; carrying over the old "Item-1"/"Item-2" positions was not
+tested live, because the maintainer's had already been lost.
+
+1.0.1 came out of a code review: the menu bar
 is only polled while the settings window is open (measured on the installed build: 16.6 idle
 wakeups a second before, none after), plus the fixes listed in [RELEASE-NOTES.md](RELEASE-NOTES.md).
 The 1.0.0 install was walked in a fresh user account; 1.0.1 changes nothing about installing, so
