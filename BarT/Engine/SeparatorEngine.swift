@@ -37,15 +37,9 @@ enum MenuBarSection: String, CaseIterable, Sendable {
 final class SeparatorEngine {
 	enum SeparatorError: LocalizedError {
 		case separatorUnavailable
-		case separatorOrder
 
 		var errorDescription: String? {
-			switch self {
-			case .separatorUnavailable:
-				"The separator item could not be placed in the menu bar."
-			case .separatorOrder:
-				"The two separators sit in the wrong order in the menu bar."
-			}
+			"The separator item could not be placed in the menu bar."
 		}
 	}
 
@@ -67,12 +61,16 @@ final class SeparatorEngine {
 			didSet { item.length = isCollapsed ? Self.collapsedLength : Self.expandedLength }
 		}
 
-		init(isCollapsed: Bool) {
+		init(isCollapsed: Bool, autosaveName: String) {
 			self.isCollapsed = isCollapsed
 			windowIDsBefore = Set(CGSBridge.menuBarWindowIDs())
 			item = NSStatusBar.system.statusItem(
 				withLength: isCollapsed ? Self.collapsedLength : Self.expandedLength
 			)
+			// macOS remembers where the user dragged a status item under this name. Left to
+			// itself it hands out "Item-1", "Item-2" in creation order, which ties the saved
+			// arrangement to the order of creation, not to the separator.
+			item.autosaveName = autosaveName
 			item.button?.image = NSImage(
 				systemSymbolName: "chevron.compact.left",
 				accessibilityDescription: "BarT separator"
@@ -119,10 +117,12 @@ final class SeparatorEngine {
 	/// further right to push everything left of it out. Two 10,000 pt items side by side would
 	/// shift the bar by 20,000 pt for no reason.
 	var reveal: Reveal = .none {
-		didSet {
-			hiddenSeparator?.isCollapsed = hiddenSeparatorCollapses
-			alwaysHiddenSeparator?.isCollapsed = alwaysHiddenSeparatorCollapses
-		}
+		didSet { applyReveal() }
+	}
+
+	private func applyReveal() {
+		hiddenSeparator?.isCollapsed = hiddenSeparatorCollapses
+		alwaysHiddenSeparator?.isCollapsed = alwaysHiddenSeparatorCollapses
 	}
 
 	private var hiddenSeparatorCollapses: Bool { reveal == .none }
@@ -172,6 +172,29 @@ final class SeparatorEngine {
 		return .alwaysHidden
 	}
 
+	/// A self-test instance runs next to the user's copy under the same bundle ID, so it shares
+	/// its defaults. Under the user's names it would overwrite the saved arrangement.
+	private static let isSelfTest = ProcessInfo.processInfo.environment["BART_SELF_TEST"] != nil
+
+	private static func autosaveName(_ separator: String) -> String {
+		(isSelfTest ? "BarTSelfTest" : "BarT") + separator
+	}
+
+	/// Up to 1.0.1 the separators had no name of their own and macOS saved them as "Item-1" and
+	/// "Item-2" (the BarT icon, created first, is "Item-0"). Carried over once, so an update
+	/// does not cost the user their arrangement.
+	private static func migrateLegacyPositions() {
+		guard !isSelfTest else { return }
+		let defaults = UserDefaults.standard
+		for (old, new) in [("Item-1", "HiddenSeparator"), ("Item-2", "AlwaysHiddenSeparator")] {
+			let oldKey = "NSStatusItem Preferred Position \(old)"
+			let newKey = "NSStatusItem Preferred Position \(autosaveName(new))"
+			guard let position = defaults.object(forKey: oldKey) else { continue }
+			if defaults.object(forKey: newKey) == nil { defaults.set(position, forKey: newKey) }
+			defaults.removeObject(forKey: oldKey)
+		}
+	}
+
 	func removeSeparators() {
 		hiddenSeparator?.remove()
 		alwaysHiddenSeparator?.remove()
@@ -191,26 +214,40 @@ final class SeparatorEngine {
 	/// item left of the existing ones, hence strictly one after another, each fully realized
 	/// before the next joins: otherwise the next one's window ID diff would pick up its
 	/// predecessor's window, which is only just appearing. That placement is guaranteed nowhere,
-	/// so it is verified at the end.
+	/// and a saved position overrides it anyway, so it is checked at the end, and if the two
+	/// stand the other way round they swap roles.
 	func prepareSeparators() async throws {
 		if hiddenSeparator != nil, alwaysHiddenSeparator != nil { return }
 		removeSeparators()
+		Self.migrateLegacyPositions()
 
-		let hidden = Separator(isCollapsed: hiddenSeparatorCollapses)
+		let hidden = Separator(
+			isCollapsed: hiddenSeparatorCollapses, autosaveName: Self.autosaveName("HiddenSeparator")
+		)
 		hiddenSeparator = hidden
 		do {
 			guard await hidden.realizedWindowID() != nil else {
 				throw SeparatorError.separatorUnavailable
 			}
-			let alwaysHidden = Separator(isCollapsed: alwaysHiddenSeparatorCollapses)
+			let alwaysHidden = Separator(
+				isCollapsed: alwaysHiddenSeparatorCollapses,
+				autosaveName: Self.autosaveName("AlwaysHiddenSeparator")
+			)
 			alwaysHiddenSeparator = alwaysHidden
 			guard
 				await alwaysHidden.realizedWindowID() != nil,
 				let hiddenFrame = hidden.frame,
 				let alwaysHiddenFrame = alwaysHidden.frame
 			else { throw SeparatorError.separatorUnavailable }
-			guard alwaysHiddenFrame.maxX <= hiddenFrame.minX + Self.tolerance else {
-				throw SeparatorError.separatorOrder
+			if alwaysHiddenFrame.maxX > hiddenFrame.minX + Self.tolerance {
+				// Swapping roles keeps the user's arrangement. This used to remove both
+				// separators instead, and removing a status item makes macOS forget its saved
+				// position, so one bad start threw away every ⌘-drag the user had made.
+				(hiddenSeparator, alwaysHiddenSeparator) = (alwaysHidden, hidden)
+				applyReveal()
+				// Both widths just changed. Everything after this (the first section pass, the
+				// self-test) measures frames, so let the bar settle first. Measured: ~450 ms.
+				try? await Task.sleep(for: .milliseconds(500))
 			}
 		} catch {
 			removeSeparators()
@@ -222,16 +259,15 @@ final class SeparatorEngine {
 // MARK: - Self-test
 
 extension SeparatorEngine {
-	/// Creates the separators (unless that already happened) and checks the one assumption that
-	/// cannot be derived from the code: that macOS places a new status item *left* of the
-	/// existing ones. If that does not hold, the meaning of both sections is inverted.
+	/// Creates the separators (unless that already happened) and checks that they ended up in
+	/// the right order: `alwaysHidden` on the left. ``prepareSeparators()`` swaps them when macOS
+	/// placed them the other way round, so a failure here means that swap went wrong.
 	///
 	/// Callable from the debug menu item; there is no other way to follow this live, because in
 	/// the normal state both separators sit off screen.
 	@discardableResult
 	func runSeparatorSelfTest() async -> Bool {
 		do {
-			// Already throws on a swapped order (``SeparatorError/separatorOrder``).
 			try await prepareSeparators()
 		} catch {
 			print("[BarT] Separator self-test FAILED: \(error.localizedDescription)")
@@ -256,6 +292,10 @@ extension SeparatorEngine {
 				alwaysHidden.minX, alwaysHidden.maxX
 			)
 		)
+		guard alwaysHidden.maxX <= hidden.minX + Self.tolerance else {
+			print("[BarT] Separator self-test FAILED: alwaysHidden sits right of hidden")
+			return false
+		}
 		print("[BarT] Separator self-test: order is correct (alwaysHidden sits on the left)")
 		return true
 	}

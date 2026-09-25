@@ -46,6 +46,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 		// would be ambiguous and could grab the wrong new window ID.
 		let windowIDsBeforeStatusItem = Set(CGSBridge.menuBarWindowIDs())
 		statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+		// A self-test instance runs next to the user's copy and shares its defaults: under its
+		// own name it cannot overwrite where the user put the icon ("Item-0").
+		if wantsSelfTest { statusItem?.autosaveName = "BarTSelfTestIcon" }
 
 		if let button = statusItem?.button {
 			button.image = NSImage(systemSymbolName: Self.collapsedSymbol, accessibilityDescription: "BarT")
